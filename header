@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           4chan x
-// @version        2.18.0
+// @version        2.18.1
 // @namespace      aeosynth
 // @description    Adds various features.
 // @copyright      2009-2011 James Campos <james.r.campos@gmail.com>
