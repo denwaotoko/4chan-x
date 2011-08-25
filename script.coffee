@@ -1193,8 +1193,6 @@ qr =
         if $('img.favicon', op).src is Favicon.empty
           watcher.watch op, id
 
-    return unless @id is 'qr_form'
-
     if !e then @submit()
     $('#error', qr.el).textContent = ''
     $('#autohide', qr.el).checked = true if conf['Auto Hide QR']
@@ -1557,7 +1555,7 @@ watcher =
   watch: (thread, id) ->
     props =
       href: "/#{g.BOARD}/res/#{id}"
-      textContent: getTitle thread
+      textContent: getTitle(thread)[...25]
 
     watched = $.get 'watched', {}
     watched[g.BOARD] or= {}
@@ -2207,7 +2205,9 @@ main =
     #recaptcha may be blocked, eg by noscript
     if (form = $ 'form[name=post]') and (canPost = !!$ '#recaptcha_response_field')
       Recaptcha.init()
-      $.bind form, 'submit', qr.submit
+      if g.REPLY and conf['Auto Watch Reply'] and conf['Thread Watcher']
+        $.bind form, 'submit', -> if $('img.favicon').src is Favicon.empty
+            watcher.watch null, g.THREAD_ID
 
     #major features
     threading.init()
