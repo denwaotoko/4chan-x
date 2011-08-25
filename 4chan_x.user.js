@@ -59,7 +59,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, NAMESPACE, Recaptcha, SECOND, Time, anonymize, conf, config, cooldown, d, expandComment, expandThread, firstRun, g, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, main, nav, nodeInserted, options, qr, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher, _ref;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, NAMESPACE, Recaptcha, SECOND, Time, anonymize, conf, config, cooldown, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, main, nav, nodeInserted, options, qr, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher, _ref;
   var __slice = Array.prototype.slice;
   config = {
     main: {
@@ -141,6 +141,7 @@
     updater: {
       checkbox: {
         'Scrolling': [false, 'Scroll updated posts into view. Only enabled at bottom of page.'],
+        'Scroll BG': [false, 'Scroll background tabs'],
         'Verbose': [true, 'Show countdown timer, new post count'],
         'Auto Update': [true, 'Automatically fetch new posts']
       },
@@ -300,13 +301,6 @@
     return object;
   };
   $.extend($, {
-    innerText: function(el) {
-      var span;
-      span = $.el('span', {
-        innerHTML: el.innerHTML.replace(/<br>/g, ' ')
-      });
-      return span.textContent;
-    },
     id: function(id) {
       return d.getElementById(id);
     },
@@ -1065,10 +1059,10 @@
       return $.replace(home, a);
     },
     dialog: function() {
-      var arr, checked, description, dialog, hiddenNum, hiddenThreads, hidingul, html, input, key, li, link, main, obj, overlay, ul, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3, _ref4;
+      var arr, checked, description, dialog, hiddenNum, hiddenThreads, hidingul, html, input, key, li, main, obj, overlay, ul, _i, _len, _ref, _ref2;
       hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
       hiddenNum = Object.keys(g.hiddenReplies).length + Object.keys(hiddenThreads).length;
-      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <a name=main>main</a> | <a name=flavors>sauce</a> | <a name=time>time</a> | <a name=keybinds>keybinds</a>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>support throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>          </div>        </div>        <hr>        <div id=content>          <div id=main>          </div>          <textarea name=flavors id=flavors hidden>" + conf['flavors'] + "</textarea>          <div id=time hidden>            <div><input type=text name=time value='" + conf['time'] + "'> <span id=timePreview></span></div>            <table>              <caption>Format specifiers <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>(source)</a></caption>              <tbody>                <tr><th>Specifier</th><th>Description</th><th>Values/Example</th></tr>                <tr><th colspan=3>Year</th></tr>                <tr><td>%y</td><td>two digit year</td><td>00-99</td></tr>                <tr><th colspan=3>Month</th></tr>                <tr><td>%b</td><td>month, abbreviated</td><td>Jun</td></tr>                <tr><td>%B</td><td>month, full length</td><td>June</td></tr>                <tr><td>%m</td><td>month, zero padded</td><td>06</td></tr>                <tr><th colspan=3>Day</th></tr>                <tr><td>%a</td><td>weekday, abbreviated</td><td>Sat</td></tr>                <tr><td>%A</td><td>weekday, full</td><td>Saturday</td></tr>                <tr><td>%d</td><td>day of the month, zero padded</td><td>03</td></tr>                <tr><td>%e</td><td>day of the month</td><td>3</td></tr>                <tr><th colspan=3>Time</th></tr>                <tr><td>%H</td><td>hour (24 hour clock) zero padded</td><td>13</td></tr>                <tr><td>%l (lowercase L)</td><td>hour (12 hour clock)</td><td>1</td></tr>                <tr><td>%I (uppercase i)</td><td>hour (12 hour clock) zero padded</td><td>01</td></tr>                <tr><td>%k</td><td>hour (24 hour clock)</td><td>13</td></tr>                <tr><td>%M</td><td>minutes, zero padded</td><td>54</td></tr>                <tr><td>%p</td><td>upper case AM or PM</td><td>PM</td></tr>                <tr><td>%P</td><td>lower case am or pm</td><td>pm</td></tr>              </tbody>            </table>          </div>          <div id=keybinds hidden>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
+      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=time_tab>time</label> | <label for=keybinds_tab>keybinds</label>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>support throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>          </div>        </div>        <hr>        <div id=content>          <input type=radio name=tab hidden id=main_tab checked>          <div id=main></div>          <input type=radio name=tab hidden id=flavors_tab>          <textarea name=flavors id=flavors>" + conf['flavors'] + "</textarea>          <input type=radio name=tab hidden id=time_tab>          <div id=time>            <div><input type=text name=time value='" + conf['time'] + "'> <span id=timePreview></span></div>            <table>              <caption>Format specifiers <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>(source)</a></caption>              <tbody>                <tr><th>Specifier</th><th>Description</th><th>Values/Example</th></tr>                <tr><th colspan=3>Year</th></tr>                <tr><td>%y</td><td>two digit year</td><td>00-99</td></tr>                <tr><th colspan=3>Month</th></tr>                <tr><td>%b</td><td>month, abbreviated</td><td>Jun</td></tr>                <tr><td>%B</td><td>month, full length</td><td>June</td></tr>                <tr><td>%m</td><td>month, zero padded</td><td>06</td></tr>                <tr><th colspan=3>Day</th></tr>                <tr><td>%a</td><td>weekday, abbreviated</td><td>Sat</td></tr>                <tr><td>%A</td><td>weekday, full</td><td>Saturday</td></tr>                <tr><td>%d</td><td>day of the month, zero padded</td><td>03</td></tr>                <tr><td>%e</td><td>day of the month</td><td>3</td></tr>                <tr><th colspan=3>Time</th></tr>                <tr><td>%H</td><td>hour (24 hour clock) zero padded</td><td>13</td></tr>                <tr><td>%l (lowercase L)</td><td>hour (12 hour clock)</td><td>1</td></tr>                <tr><td>%I (uppercase i)</td><td>hour (12 hour clock) zero padded</td><td>01</td></tr>                <tr><td>%k</td><td>hour (24 hour clock)</td><td>13</td></tr>                <tr><td>%M</td><td>minutes, zero padded</td><td>54</td></tr>                <tr><td>%p</td><td>upper case AM or PM</td><td>PM</td></tr>                <tr><td>%P</td><td>lower case am or pm</td><td>pm</td></tr>              </tbody>            </table>          </div>          <input type=radio name=tab hidden id=keybinds_tab>          <div id=keybinds>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
       dialog = $.el('div', {
         id: 'options',
         innerHTML: html
@@ -1090,30 +1084,21 @@
           li = $.el('li', {
             innerHTML: "<label><input type=checkbox name='" + key + "' " + checked + ">" + key + "</label><span class=description>: " + description + "</span>"
           });
+          $.bind($('input', li), 'click', $.cb.checked);
           $.append(ul, li);
         }
         $.append(main, ul);
       }
       li = $.el('li', {
-        innerHTML: "<input type=button value='hidden: " + hiddenNum + "'> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
+        innerHTML: "<button>hidden: " + hiddenNum + "</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
       });
       $.append(hidingul, li);
-      _ref2 = $$('input[type=checkbox]', dialog);
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        input = _ref2[_i];
-        $.bind(input, 'click', $.cb.checked);
-      }
-      $.bind($('input[type=button]', dialog), 'click', options.clearHidden);
-      _ref3 = $$('#floaty a', dialog);
-      for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
-        link = _ref3[_j];
-        $.bind(link, 'click', options.tab);
-      }
+      $.bind($('button', li), 'click', options.clearHidden);
       $.bind($('textarea[name=flavors]', dialog), 'change', $.cb.value);
       $.bind($('input[name=time]', dialog), 'keyup', options.time);
-      _ref4 = $$('#keybinds input', dialog);
-      for (_k = 0, _len3 = _ref4.length; _k < _len3; _k++) {
-        input = _ref4[_k];
+      _ref2 = $$('#keybinds input', dialog);
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        input = _ref2[_i];
         input.value = conf[input.name];
         $.bind(input, 'keydown', options.keybind);
       }
@@ -1136,20 +1121,10 @@
         return e.stopPropagation();
       });
     },
-    tab: function() {
-      var div, _i, _len, _ref, _results;
-      _ref = $('#content').children;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        div = _ref[_i];
-        _results.push(div.id === this.name ? $.show(div) : $.hide(div));
-      }
-      return _results;
-    },
     clearHidden: function(e) {
       $["delete"]("hiddenReplies/" + g.BOARD + "/");
       $["delete"]("hiddenThreads/" + g.BOARD + "/");
-      this.value = "hidden: 0";
+      this.textContent = "hidden: 0";
       return g.hiddenReplies = {};
     },
     keybind: function(e) {
@@ -1433,12 +1408,14 @@
       return ta.value += text;
     },
     refresh: function() {
-      var newFile, oldFile;
+      var newFile, oldFile, _ref;
       $('[name=sub]', qr.el).value = '';
       $('[name=com]', qr.el).value = '';
       $('[name=recaptcha_response_field]', qr.el).value = '';
       if (!conf['Remember Spoiler']) {
-        $('[name=spoiler]', qr.el).checked = false;
+        if ((_ref = $('[name=spoiler]', qr.el)) != null) {
+          _ref.checked = false;
+        }
       }
       oldFile = $('[type=file]', qr.el);
       newFile = $.el('input', {
@@ -1679,12 +1656,16 @@
     init: function() {
       var checkbox, checked, dialog, html, input, name, title, _i, _len, _ref;
       if (conf['Scrolling']) {
-        $.bind(window, 'focus', (function() {
-          return updater.focus = true;
-        }));
-        $.bind(window, 'blur', (function() {
-          return updater.focus = false;
-        }));
+        if (conf['Scroll BG']) {
+          updater.focus = true;
+        } else {
+          $.bind(window, 'focus', (function() {
+            return updater.focus = true;
+          }));
+          $.bind(window, 'blur', (function() {
+            return updater.focus = false;
+          }));
+        }
       }
       html = "<div class=move><span id=count></span> <span id=timer>-" + conf['Interval'] + "</span></div>";
       checkbox = config.updater.checkbox;
@@ -1907,14 +1888,10 @@
       return watcher.refresh();
     },
     watch: function(thread, id) {
-      var el, props, watched, _name;
-      el = $('span.filetitle', thread);
-      if (!el.textContent) {
-        el = $('blockquote', thread);
-      }
+      var props, watched, _name;
       props = {
         href: "/" + g.BOARD + "/res/" + id,
-        textContent: el.textContent ? "/" + g.BOARD + "/ - " + ($.innerText(el).slice(0, 25)) : d.title
+        textContent: getTitle(thread)
       };
       watched = $.get('watched', {});
       watched[_name = g.BOARD] || (watched[_name] = {});
@@ -2097,17 +2074,23 @@
       }
     }
   };
+  getTitle = function(thread) {
+    var el, span;
+    el = $('span.filetitle', thread);
+    if (!el.textContent) {
+      el = $('blockquote', thread);
+      if (!el.textContent) {
+        el = $('span.postername', thread);
+      }
+    }
+    span = $.el('span', {
+      innerHTML: el.innerHTML.replace(/<br>/g, ' ')
+    });
+    return "/" + g.BOARD + "/ - " + span.textContent;
+  };
   titlePost = {
     init: function() {
-      var el;
-      el = $('span.filetitle');
-      if (!el.textContent) {
-        el = $('blockquote');
-        if (!el.textContent) {
-          return;
-        }
-      }
-      return d.title = "/" + g.BOARD + "/ - " + ($.innerText(el));
+      return d.title = getTitle();
     }
   };
   quoteBacklink = {
@@ -3029,8 +3012,14 @@
         list-style: none;\
         padding: 0;\
       }\
+      #options label {\
+        text-decoration: underline;\
+      }\
       #floaty {\
         float: left;\
+      }\
+      #options [name=tab]:not(:checked) + * {\
+        display: none;\
       }\
       #content > * {\
         height: 450px;\

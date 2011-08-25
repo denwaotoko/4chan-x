@@ -78,6 +78,7 @@ config =
   updater:
     checkbox:
       'Scrolling':    [false, 'Scroll updated posts into view. Only enabled at bottom of page.']
+      'Scroll BG':    [false, 'Scroll background tabs']
       'Verbose':      [true,  'Show countdown timer, new post count']
       'Auto Update':  [true,  'Automatically fetch new posts']
     'Interval': 30
@@ -209,9 +210,6 @@ $.extend = (object, properties) ->
   object
 
 $.extend $,
-  innerText: (el) ->
-    span = $.el 'span', innerHTML: el.innerHTML.replace /<br>/g, ' '
-    span.textContent
   id: (id) ->
     d.getElementById id
   globalEval: (code) ->
@@ -787,7 +785,7 @@ options =
       <div class='reply dialog'>
         <div id=optionsbar>
           <div id=floaty>
-            <a name=main>main</a> | <a name=flavors>sauce</a> | <a name=time>time</a> | <a name=keybinds>keybinds</a>
+            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=time_tab>time</label> | <label for=keybinds_tab>keybinds</label>
           </div>
           <div id=credits>
             <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |
@@ -798,10 +796,12 @@ options =
         </div>
         <hr>
         <div id=content>
-          <div id=main>
-          </div>
-          <textarea name=flavors id=flavors hidden>#{conf['flavors']}</textarea>
-          <div id=time hidden>
+          <input type=radio name=tab hidden id=main_tab checked>
+          <div id=main></div>
+          <input type=radio name=tab hidden id=flavors_tab>
+          <textarea name=flavors id=flavors>#{conf['flavors']}</textarea>
+          <input type=radio name=tab hidden id=time_tab>
+          <div id=time>
             <div><input type=text name=time value='#{conf['time']}'> <span id=timePreview></span></div>
             <table>
               <caption>Format specifiers <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>(source)</a></caption>
@@ -832,7 +832,8 @@ options =
               </tbody>
             </table>
           </div>
-          <div id=keybinds hidden>
+          <input type=radio name=tab hidden id=keybinds_tab>
+          <div id=keybinds>
             <table>
               <tbody>
                 <tr><th>Actions</th><th>Keybinds</th></tr>
@@ -875,16 +876,14 @@ options =
         description = arr[1]
         li = $.el 'li',
           innerHTML: "<label><input type=checkbox name='#{key}' #{checked}>#{key}</label><span class=description>: #{description}</span>"
+        $.bind $('input', li), 'click', $.cb.checked
         $.append ul, li
       $.append main, ul
     li = $.el 'li',
-      innerHTML: "<input type=button value='hidden: #{hiddenNum}'> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
+      innerHTML: "<button>hidden: #{hiddenNum}</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
     $.append hidingul, li
+    $.bind $('button', li), 'click', options.clearHidden
 
-    for input in $$ 'input[type=checkbox]', dialog
-      $.bind input, 'click', $.cb.checked
-    $.bind $('input[type=button]', dialog), 'click', options.clearHidden
-    $.bind link, 'click', options.tab for link in $$ '#floaty a', dialog
     $.bind $('textarea[name=flavors]', dialog), 'change', $.cb.value
     $.bind $('input[name=time]', dialog), 'keyup', options.time
     for input in $$ '#keybinds input', dialog
@@ -906,19 +905,12 @@ options =
     $.bind overlay, 'click', -> $.rm overlay
     $.bind dialog.firstElementChild, 'click', (e) -> e.stopPropagation()
 
-  tab: ->
-    for div in $('#content').children
-      if div.id is @name
-        $.show div
-      else
-        $.hide div
-
   clearHidden: (e) ->
     #'hidden' might be misleading; it's the number of IDs we're *looking* for,
     # not the number of posts actually hidden on the page.
     $.delete "hiddenReplies/#{g.BOARD}/"
     $.delete "hiddenThreads/#{g.BOARD}/"
-    @value = "hidden: 0"
+    @textContent = "hidden: 0"
     g.hiddenReplies = {}
   keybind: (e) ->
     e.preventDefault()
@@ -1177,7 +1169,7 @@ qr =
     $('[name=sub]', qr.el).value = ''
     $('[name=com]', qr.el).value = ''
     $('[name=recaptcha_response_field]', qr.el).value = ''
-    $('[name=spoiler]', qr.el).checked = false unless conf['Remember Spoiler']
+    $('[name=spoiler]', qr.el)?.checked = false unless conf['Remember Spoiler']
     # XXX opera doesn't allow resetting file inputs w/ file.value = ''
     oldFile = $ '[type=file]', qr.el
     newFile = $.el 'input', type: 'file', name: 'upfile', accept: qr.acceptFiles
@@ -1376,8 +1368,11 @@ threadHiding =
 updater =
   init: ->
     if conf['Scrolling']
-      $.bind window, 'focus', (-> updater.focus = true)
-      $.bind window, 'blur',  (-> updater.focus = false)
+      if conf['Scroll BG']
+        updater.focus = true
+      else
+        $.bind window, 'focus', (-> updater.focus = true)
+        $.bind window, 'blur',  (-> updater.focus = false)
     html = "<div class=move><span id=count></span> <span id=timer>-#{conf['Interval']}</span></div>"
     {checkbox} = config.updater
     for name of checkbox
@@ -1560,12 +1555,9 @@ watcher =
     watcher.refresh()
 
   watch: (thread, id) ->
-    el = $ 'span.filetitle', thread
-    if not el.textContent
-      el = $ 'blockquote', thread
     props =
       href: "/#{g.BOARD}/res/#{id}"
-      textContent: if el.textContent then "/#{g.BOARD}/ - #{$.innerText(el)[...25]}" else d.title
+      textContent: getTitle thread
 
     watched = $.get 'watched', {}
     watched[g.BOARD] or= {}
@@ -1673,14 +1665,18 @@ Time =
     P: -> if Time.date.getHours() < 12 then 'am' else 'pm'
     y: -> Time.date.getFullYear() - 2000
 
+getTitle = (thread) ->
+  el = $ 'span.filetitle', thread
+  if not el.textContent
+    el = $ 'blockquote', thread
+    if not el.textContent
+      el = $ 'span.postername', thread
+  span = $.el 'span', innerHTML: el.innerHTML.replace /<br>/g, ' '
+  "/#{g.BOARD}/ - #{span.textContent}"
+
 titlePost =
   init: ->
-    el = $ 'span.filetitle'
-    if not el.textContent
-      el = $ 'blockquote'
-      if not el.textContent
-        return
-    d.title = "/#{g.BOARD}/ - #{$.innerText el}"
+    d.title = getTitle()
 
 quoteBacklink =
   init: ->
@@ -2415,8 +2411,14 @@ main =
         list-style: none;
         padding: 0;
       }
+      #options label {
+        text-decoration: underline;
+      }
       #floaty {
         float: left;
+      }
+      #options [name=tab]:not(:checked) + * {
+        display: none;
       }
       #content > * {
         height: 450px;

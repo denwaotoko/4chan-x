@@ -1,4 +1,8 @@
 master
+- mayhem:
+  fix persistent qr not cleaning the file input
+- aeosynth:
+  updater: scroll background tabs
 
 2.18.0
 - mayhem:
