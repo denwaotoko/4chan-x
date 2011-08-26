@@ -401,6 +401,15 @@ expandComment =
         if reply.id == replyID
           bq = $ 'blockquote', reply
           break
+    for quote in $$ 'a.quotelink', bq
+      if quote.getAttribute('href') is quote.hash
+        quote.pathname = "/#{g.BOARD}/res/#{threadID}"
+      if conf['Quote Preview']
+        $.bind quote, 'mouseover', quotePreview.mouseover
+        $.bind quote, 'mousemove', ui.hover
+        $.bind quote, 'mouseout',  quotePreview.mouseout
+      if conf['Quote Inline']
+        $.bind quote, 'click', quoteInline.toggle
     $.replace a.parentNode.parentNode, bq
 
 expandThread =
@@ -1555,7 +1564,7 @@ watcher =
   watch: (thread, id) ->
     props =
       href: "/#{g.BOARD}/res/#{id}"
-      textContent: getTitle(thread)[...25]
+      textContent: getTitle(thread)[...30]
 
     watched = $.get 'watched', {}
     watched[g.BOARD] or= {}
@@ -1802,7 +1811,7 @@ quotePreview =
       qp.innerHTML = "Loading #{id}..."
       threadID = @pathname.split('/').pop() or $.x('ancestor::div[@class="thread"]/div', @).id
       $.cache @pathname, (-> quotePreview.parse @, id, threadID)
-      ui.hover()
+      ui.hover e
   mouseout: ->
     $.removeClass el, 'qphl' if el = $.id @hash[1..]
     ui.hoverend()
