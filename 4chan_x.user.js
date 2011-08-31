@@ -1,13 +1,12 @@
 // ==UserScript==
 // @name           4chan x
-// @version        2.18.3
+// @version        2.19.0
 // @namespace      aeosynth
 // @description    Adds various features.
 // @copyright      2009-2011 James Campos <james.r.campos@gmail.com>
 // @license        MIT; http://en.wikipedia.org/wiki/Mit_license
 // @include        http://boards.4chan.org/*
 // @include        http://sys.4chan.org/*
-// @updateURL      https://github.com/aeosynth/4chan-x/raw/stable/4chan_x.user.js
 // ==/UserScript==
 
 /* LICENSE
@@ -115,6 +114,7 @@
     },
     flavors: ['http://regex.info/exif.cgi?url=', 'http://iqdb.org/?url=', 'http://google.com/searchbyimage?image_url=', '#http://tineye.com/search?url=', '#http://saucenao.com/search.php?db=999&url=', '#http://imgur.com/upload?url=', '#http://anonym.to/?'].join('\n'),
     time: '%m/%d/%y(%a)%H:%M',
+    backlink: '>>%id',
     hotkeys: {
       close: 'Esc',
       spoiler: 'ctrl+s',
@@ -149,8 +149,8 @@
     }
   };
   if (typeof console !== "undefined" && console !== null) {
-    log = function() {
-      return console.log.apply(console, arguments);
+    log = function(arg) {
+      return console.log(arg);
     };
   }
   if (!Object.keys) {
@@ -380,10 +380,10 @@
       return el.hidden = false;
     },
     addClass: function(el, className) {
-      return el.className += ' ' + className;
+      return el.classList.add(className);
     },
     removeClass: function(el, className) {
-      return el.className = el.className.replace(' ' + className, '');
+      return el.classList.remove(className);
     },
     rm: function(el) {
       return el.parentNode.removeChild(el);
@@ -1074,10 +1074,10 @@
       return $.replace(home, a);
     },
     dialog: function() {
-      var arr, checked, description, dialog, hiddenNum, hiddenThreads, hidingul, html, input, key, li, main, obj, overlay, ul, _i, _len, _ref, _ref2;
+      var arr, checked, description, dialog, hiddenNum, hiddenThreads, html, input, key, li, main, obj, overlay, ul, _i, _len, _ref, _ref2;
       hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
       hiddenNum = Object.keys(g.hiddenReplies).length + Object.keys(hiddenThreads).length;
-      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=time_tab>time</label> | <label for=keybinds_tab>keybinds</label>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>support throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>          </div>        </div>        <hr>        <div id=content>          <input type=radio name=tab hidden id=main_tab checked>          <div id=main></div>          <input type=radio name=tab hidden id=flavors_tab>          <textarea name=flavors id=flavors>" + conf['flavors'] + "</textarea>          <input type=radio name=tab hidden id=time_tab>          <div id=time>            <div><input type=text name=time value='" + conf['time'] + "'> <span id=timePreview></span></div>            <table>              <caption>Format specifiers <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>(source)</a></caption>              <tbody>                <tr><th>Specifier</th><th>Description</th><th>Values/Example</th></tr>                <tr><th colspan=3>Year</th></tr>                <tr><td>%y</td><td>two digit year</td><td>00-99</td></tr>                <tr><th colspan=3>Month</th></tr>                <tr><td>%b</td><td>month, abbreviated</td><td>Jun</td></tr>                <tr><td>%B</td><td>month, full length</td><td>June</td></tr>                <tr><td>%m</td><td>month, zero padded</td><td>06</td></tr>                <tr><th colspan=3>Day</th></tr>                <tr><td>%a</td><td>weekday, abbreviated</td><td>Sat</td></tr>                <tr><td>%A</td><td>weekday, full</td><td>Saturday</td></tr>                <tr><td>%d</td><td>day of the month, zero padded</td><td>03</td></tr>                <tr><td>%e</td><td>day of the month</td><td>3</td></tr>                <tr><th colspan=3>Time</th></tr>                <tr><td>%H</td><td>hour (24 hour clock) zero padded</td><td>13</td></tr>                <tr><td>%l (lowercase L)</td><td>hour (12 hour clock)</td><td>1</td></tr>                <tr><td>%I (uppercase i)</td><td>hour (12 hour clock) zero padded</td><td>01</td></tr>                <tr><td>%k</td><td>hour (24 hour clock)</td><td>13</td></tr>                <tr><td>%M</td><td>minutes, zero padded</td><td>54</td></tr>                <tr><td>%p</td><td>upper case AM or PM</td><td>PM</td></tr>                <tr><td>%P</td><td>lower case am or pm</td><td>pm</td></tr>              </tbody>            </table>          </div>          <input type=radio name=tab hidden id=keybinds_tab>          <div id=keybinds>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
+      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=rice_tab>rice</label> | <label for=keybinds_tab>keybinds</label>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>support throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>          </div>        </div>        <hr>        <div id=content>          <input type=radio name=tab hidden id=main_tab checked>          <div id=main></div>          <input type=radio name=tab hidden id=flavors_tab>          <textarea name=flavors id=flavors>" + conf['flavors'] + "</textarea>          <input type=radio name=tab hidden id=rice_tab>          <div id=rice>            <ul>              Backlink formatting              <li><input type=text name=backlink value='" + conf['backlink'] + "'> : <span id=backlinkPreview></span></li>            </ul>            <ul>              Time formatting              <li><input type=text name=time value='" + conf['time'] + "'> : <span id=timePreview></span></li>              <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>              <li>Day: %a, %A, %d, %e</li>              <li>Month: %m, %b, %B</li>              <li>Year: %y</li>              <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i)</li>              <li>Month: %M, %p, %P</li>            </ul>          </div>          <input type=radio name=tab hidden id=keybinds_tab>          <div id=keybinds>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
       dialog = $.el('div', {
         id: 'options',
         innerHTML: html
@@ -1089,9 +1089,6 @@
         ul = $.el('ul', {
           textContent: key
         });
-        if (key === 'Hiding') {
-          hidingul = ul;
-        }
         for (key in obj) {
           arr = obj[key];
           checked = conf[key] ? "checked" : "";
@@ -1107,10 +1104,11 @@
       li = $.el('li', {
         innerHTML: "<button>hidden: " + hiddenNum + "</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
       });
-      $.append(hidingul, li);
       $.bind($('button', li), 'click', options.clearHidden);
-      $.bind($('textarea[name=flavors]', dialog), 'change', $.cb.value);
+      $.append($('ul:nth-child(2)', dialog), li);
+      $.bind($('#flavors', dialog), 'change', $.cb.value);
       $.bind($('input[name=time]', dialog), 'keyup', options.time);
+      $.bind($('input[name=backlink]', dialog), 'keyup', options.backlink);
       _ref2 = $$('#keybinds input', dialog);
       for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
         input = _ref2[_i];
@@ -1129,6 +1127,7 @@
       $.append(overlay, dialog);
       $.append(d.body, overlay);
       options.time.call($('input[name=time]', dialog));
+      options.backlink.call($('input[name=backlink]', dialog));
       $.bind(overlay, 'click', function() {
         return $.rm(overlay);
       });
@@ -1158,6 +1157,11 @@
       Time.foo();
       Time.date = new Date();
       return $('#timePreview').textContent = Time.funk(Time);
+    },
+    backlink: function(e) {
+      $.set('backlink', this.value);
+      conf['backlink'] = this.value;
+      return $('#backlinkPreview').textContent = conf['backlink'].replace(/%id/, '123456789');
     }
   };
   cooldown = {
@@ -1306,7 +1310,7 @@
       submitDisabled = $('#com_submit').disabled ? 'disabled' : '';
       THREAD_ID = g.THREAD_ID || $.x('ancestor::div[@class="thread"]/div', link).id;
       qr.challenge = $('#recaptcha_challenge_field').value;
-      html = "      <a id=close title=close>X</a>      <input type=checkbox id=autohide title=autohide>      <div class=move>        <input class=inputtext type=text name=name value='" + name + "' placeholder=Name form=qr_form>        Quick Reply      </div>      <div class=autohide>        <form name=post action=http://sys.4chan.org/" + g.BOARD + "/post method=POST enctype=multipart/form-data target=iframe id=qr_form>          <input type=hidden name=resto value=" + THREAD_ID + ">          <input type=hidden name=recaptcha_challenge_field id=recaptcha_challenge_field>          <input type=hidden name=mode value=regist>          <div><input class=inputtext type=text name=email value='" + email + "' placeholder=E-mail>" + qr.spoiler + "</div>          <div><input class=inputtext type=text name=sub placeholder=Subject><input type=submit value=" + submitValue + " id=com_submit " + submitDisabled + "><label><input type=checkbox id=auto>auto</label></div>          <div><textarea class=inputtext name=com placeholder=Comment></textarea></div>          <div><img src=http://www.google.com/recaptcha/api/image?c=" + qr.challenge + "></div>          <div><input class=inputtext type=text autocomplete=off placeholder=Verification id=dummy><input type=hidden name=recaptcha_response_field id=recaptcha_response_field><span id=captchas>" + ($.get('captchas', []).length) + " captchas</span></div>          <div><input type=file name=upfile accept='" + qr.acceptFiles + "'></div>        </form>        <div id=files></div>        <div><input class=inputtext type=password name=pwd value='" + pwd + "' placeholder=Password form=qr_form maxlength=8><a id=attach>attach another file</a></div>      </div>      <a id=error class=error></a>      ";
+      html = "      <a id=close title=close>X</a>      <input type=checkbox id=autohide title=autohide>      <div class=move>        <input class=inputtext type=text name=name value='" + name + "' placeholder=Name form=qr_form>        Quick Reply      </div>      <div class=autohide>        <form name=post action=http://sys.4chan.org/" + g.BOARD + "/post method=POST enctype=multipart/form-data target=iframe id=qr_form>          <input type=hidden name=resto value=" + THREAD_ID + ">          <input type=hidden name=mode value=regist>          <input type=hidden name=recaptcha_challenge_field id=recaptcha_challenge_field>          <input type=hidden name=recaptcha_response_field id=recaptcha_response_field>          <div><input class=inputtext type=text name=email value='" + email + "' placeholder=E-mail>" + qr.spoiler + "</div>          <div><input class=inputtext type=text name=sub placeholder=Subject><input type=submit value=" + submitValue + " id=com_submit " + submitDisabled + "><label><input type=checkbox id=auto>auto</label></div>          <div><textarea class=inputtext name=com placeholder=Comment></textarea></div>          <div><img src=http://www.google.com/recaptcha/api/image?c=" + qr.challenge + "></div>          <div><input class=inputtext type=text autocomplete=off placeholder=Verification id=dummy><span id=captchas>" + ($.get('captchas', []).length) + " captchas</span></div>          <div><input type=file name=upfile accept='" + qr.acceptFiles + "'></div>        </form>        <div id=files></div>        <div><input class=inputtext type=password name=pwd value='" + pwd + "' placeholder=Password form=qr_form maxlength=8><a id=attach>attach another file</a></div>      </div>      <a id=error class=error></a>      ";
       qr.el = ui.dialog('qr', {
         top: '0px',
         left: '0px'
@@ -1423,8 +1427,9 @@
       return ta.value += text;
     },
     refresh: function() {
-      var newFile, oldFile, _ref;
+      var m, newFile, oldFile, _ref;
       $('[name=sub]', qr.el).value = '';
+      $('[name=email]', qr.el).value = (m = d.cookie.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('[name=com]', qr.el).value = '';
       $('[name=recaptcha_response_field]', qr.el).value = '';
       if (!conf['Remember Spoiler']) {
@@ -1611,7 +1616,7 @@
       }
     },
     toggle: function(thread) {
-      if (thread.className.indexOf('stub') !== -1 || thread.hidden) {
+      if (thread.classList.contains('stub') || thread.hidden) {
         return threadHiding.show(thread);
       } else {
         return threadHiding.hide(thread);
@@ -1694,6 +1699,7 @@
       }, html);
       updater.count = $('#count', dialog);
       updater.timer = $('#timer', dialog);
+      updater.br = $('br[clear]');
       _ref = $$('input', dialog);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         input = _ref[_i];
@@ -1741,30 +1747,29 @@
         }
       },
       update: function() {
-        var arr, body, br, id, input, replies, reply, scroll, _i, _len, _ref, _ref2;
+        var arr, body, id, input, replies, reply, scroll, _i, _len, _ref, _ref2;
         if (this.status === 404) {
           updater.timer.textContent = '';
           updater.count.textContent = 404;
           updater.count.className = 'error';
-          window.clearInterval(updater.intervalID);
+          clearTimeout(updater.timeoutID);
           _ref = $$('#com_submit');
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             input = _ref[_i];
             input.disabled = true;
             input.value = 404;
           }
-          d.title = d.title.match(/.+- /)[0] + 404;
+          d.title = d.title.match(/.+-/)[0] + ' 404';
           g.dead = true;
           Favicon.update();
           return;
         }
-        br = $('br[clear]');
-        id = Number(((_ref2 = $('td[id]', br.previousElementSibling)) != null ? _ref2.id : void 0) || 0);
+        id = Number(((_ref2 = $('td[id]', updater.br.previousElementSibling)) != null ? _ref2.id : void 0) || 0);
         arr = [];
         body = $.el('body', {
           innerHTML: this.responseText
         });
-        replies = $$('td[id]', body);
+        replies = $$('.reply', body);
         while ((reply = replies.pop()) && (reply.id > id)) {
           arr.push(reply.parentNode.parentNode.parentNode);
         }
@@ -1779,7 +1784,7 @@
           }
         }
         while (reply = arr.pop()) {
-          $.before(br, reply);
+          $.before(updater.br, reply);
         }
         if (scroll) {
           return scrollTo(0, d.body.scrollHeight);
@@ -1966,7 +1971,8 @@
             prefix = _ref[i];
             link = $.el('a', {
               textContent: sauce.names[i],
-              href: prefix + suffix
+              href: prefix + suffix,
+              target: '_blank'
             });
             _results.push($.append(span, $.tn(' '), link));
           }
@@ -2107,6 +2113,9 @@
   };
   quoteBacklink = {
     init: function() {
+      var format;
+      format = conf['backlink'].replace(/%id/, "' + id + '");
+      quoteBacklink.funk = Function('id', "return'" + format + "'");
       return g.callbacks.push(function(root) {
         var container, el, id, link, qid, quote, quotes, _i, _len, _ref, _results;
         if (/inline/.test(root.className)) {
@@ -2133,7 +2142,7 @@
           link = $.el('a', {
             href: "#" + id,
             className: 'backlink',
-            textContent: ">>" + id
+            textContent: quoteBacklink.funk(id)
           });
           if (conf['Quote Preview']) {
             $.bind(link, 'mouseover', quotePreview.mouseover);
@@ -2143,7 +2152,7 @@
           if (conf['Quote Inline']) {
             $.bind(link, 'click', quoteInline.toggle);
           }
-          if (!(container = $('.container', el))) {
+          if (!((container = $('.container', el)) && container.parentNode === el)) {
             container = $.el('span', {
               className: 'container'
             });
@@ -2380,20 +2389,15 @@
           $.after(span, a);
           $.after(span, $.tn(' '));
         }
-        return $.bind(a, 'click', reportButton.cb.report);
+        return $.bind(a, 'click', reportButton.report);
       });
     },
-    cb: {
-      report: function(e) {
-        return reportButton.report(this);
-      }
-    },
-    report: function(target) {
-      var input;
-      input = $('input', target.parentNode);
-      input.click();
-      $('input[value="Report"]').click();
-      return input.click();
+    report: function() {
+      var id, set, url;
+      url = "http://sys.4chan.org/" + g.BOARD + "/imgboard.php?mode=report&no=" + this.previousElementSibling.childNodes[1].textContent;
+      id = "" + NAMESPACE + "popup";
+      set = "toolbar=0,scrollbars=0,location=0,status=1,menubar=0,resizable=1,width=685,height=200";
+      return window.open(url, id, set);
     }
   };
   threadStats = {
@@ -2466,12 +2470,12 @@
     }
   };
   Favicon = {
-    dead: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEUAAAAAAAD/AAA9+90tAAAAAXRSTlMAQObYZgAAADtJREFUCB0FwUERxEAIALDszMG730PNSkBEBSECoU0AEPe0mly5NWprRUcDQAdn68qtkVsj3/84z++CD5u7CsnoBJoaAAAAAElFTkSuQmCC',
-    deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWUlEQVR4XrWSAQoAIAgD/f+njSApsTqjGoTQ5oGWPJMOOs60CzsWwIwz1I4PUIYh+WYEMGQ6I/txw91kP4oA9BdwhKp1My4xQq6e8Q9ANgDJjOErewFiNesV2uGSfGv1/HYAAAAASUVORK5CYII=',
+    dead: 'data:image/gif;base64,R0lGODlhEAAQAKECAAAAAP8AAP///////yH5BAEKAAIALAAAAAAQABAAAAIvlI+pq+D9DAgUoFkPDlbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
+    deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABIUlEQVQ4jZ2ScWuDMBDFgw4pIkU0WsoQkWAYIkXZH4N9/+/V3dmfXSrKYIFHwt17j8vdGWNMIkgFuaDgzgQnwRs4EQs5KdolUQtagRN0givEDBTEOjgtGs0Zq8F7cKqqusVxrMQLaDUWcjBSrXkn8gs51tpJSWLk9b3HUa0aNIL5gPBR1/V4kJvR7lTwl8GmAm1Gf9+c3S+89qBHa8502AsmSrtBaEBPbIbj0ah2madlNAPEccdgJDfAtWifBjqWKShRBT6KoiH8QlEUn/qt0CCjnNdmPUwmFWzj9Oe6LpKuZXcwqq88z78Pch3aZU3dPwwc2sWlfZKCW5tWluV8kGvXClLm6dYN4/aUqfCbnEOzNDGhGZbNargvxCzvMGfRJD8UaDVvgkzo6QAAAABJRU5ErkJggg==',
     "default": ((_ref = $('link[rel="shortcut icon"]', d.head)) != null ? _ref.href : void 0) || '',
     empty: 'data:image/gif;base64,R0lGODlhEAAQAJEAAAAAAP///9vb2////yH5BAEAAAMALAAAAAAQABAAAAIvnI+pq+D9DBAUoFkPFnbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
-    haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVR4XrWRQQoAIQwD+6L97j7Ih9WTQQxhDqJQCk4Mranuvqod6LgwawSqSuUmWSPw/UNlJlnDAmA2ARjABLYj8ZyCzJHHqOg+GdAKZmKPIQUzuYrxicHqEgHzP9g7M0+hj45sAnRWxtPj3zSPAAAAAElFTkSuQmCC',
-    haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAADFBMVEUAAABmzDP///8AAABet0i+AAAAAXRSTlMAQObYZgAAAExJREFUeF4tyrENgDAMAMFXKuQswQLBG3mOlBnFS1gwDfIYLpEivvjq2MlqjmYvYg5jWEzCwtDSQlwcXKCVLrpFbvLvvSf9uZJ2HusDtJAY7Tkn1oYAAAAASUVORK5CYII=',
+    haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVQ4jZ2S4crCMAxF+0OGDJEPKYrIGKOsiJSx/fJRfSAfTJNyKqXfiuDg0C25N2RJjTGmEVrhTzhw7oStsIEtsVzT4o2Jo9ALThiEM8IdHIgNaHo8mjNWg6/ske8bohPo+63QOLzmooHp8fyAICBSQkVz0QKdsFQEV6WSW/D+7+BbgbIDHcb4Kp61XyjyI16zZ8JemGltQtDBSGxB4/GoN+7TpkkjDCsFArm0IYv3U0BbnYtf8BCy+JytsE0X6VyuKhPPK/GAJ14kvZZDZVV3pZIb8MZr6n4o4PDGKn0S5SdDmyq5PnXQsk+Xbhinp03FFzmHJw6xYRiWm9VxnohZ3vOcxdO8ARmXRvbWdtzQAAAAAElFTkSuQmCC',
+    haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCklEQVQ4jZ2S0WrDMAxF/TBCCKWMYhZKCSGYmFJMSNjD/mhf239qJXNcjBdTWODgRLpXKJKNMaYROuFTOHEehFb4gJZYrunwxsSXMApOmIQzwgOciE1oRjyaM1aDj+yR7xuiHvT9VmgcXnPRwO/9+wWCgEgJFc1FCwzCVhFclUpuw/u3g3cFyg50GPOjePZ+ocjPeM2RCXthpbUFwQAzsQ2Nx6PeuE+bJo0w7BQI5NKGLN5XAW11LX7BQ8jia7bCLl2kc7mqTLzuxAOeeJH0Wk6VVf0oldyEN15T948CDm+sMiZRfjK0pZIbUwcd+3TphnF62lR8kXN44hAbhmG5WQNnT8zynucsnuYJhFpBfkMzqD4AAAAASUVORK5CYII=',
     update: function() {
       var clone, favicon, href, l;
       l = unread.replies.length;
@@ -3068,7 +3072,7 @@
       }\
       #qr textarea {\
         width: 100%;\
-        height: 120px;\
+        height: 125px;\
       }\
       #qr #close, #qr #autohide {\
         float: right;\

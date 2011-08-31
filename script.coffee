@@ -53,6 +53,7 @@ config =
     '#http://anonym.to/?'
   ].join '\n'
   time: '%m/%d/%y(%a)%H:%M'
+  backlink: '>>%id'
   hotkeys:
     close:           'Esc'
     spoiler:         'ctrl+s'
@@ -85,8 +86,10 @@ config =
 
 # XXX chrome can't into `{log} = console`
 if console?
-  log = ->
-    console.log arguments...
+  # XXX scriptish - console.log.apply is not a function
+  # https://github.com/scriptish/scriptish/issues/499
+  log = (arg) ->
+    console.log arg
 
 # XXX opera cannot into Object.keys
 if not Object.keys
@@ -257,9 +260,9 @@ $.extend $,
   show: (el) ->
     el.hidden = false
   addClass: (el, className) ->
-    el.className += ' ' + className
+    el.classList.add className
   removeClass: (el, className) ->
-    el.className = el.className.replace ' ' + className, ''
+    el.classList.remove className
   rm: (el) ->
     el.parentNode.removeChild el
   append: (parent, children...) ->
@@ -794,7 +797,7 @@ options =
       <div class='reply dialog'>
         <div id=optionsbar>
           <div id=floaty>
-            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=time_tab>time</label> | <label for=keybinds_tab>keybinds</label>
+            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=rice_tab>rice</label> | <label for=keybinds_tab>keybinds</label>
           </div>
           <div id=credits>
             <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |
@@ -809,37 +812,22 @@ options =
           <div id=main></div>
           <input type=radio name=tab hidden id=flavors_tab>
           <textarea name=flavors id=flavors>#{conf['flavors']}</textarea>
-          <input type=radio name=tab hidden id=time_tab>
-          <div id=time>
-            <div><input type=text name=time value='#{conf['time']}'> <span id=timePreview></span></div>
-            <table>
-              <caption>Format specifiers <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>(source)</a></caption>
-              <tbody>
-                <tr><th>Specifier</th><th>Description</th><th>Values/Example</th></tr>
-                <tr><th colspan=3>Year</th></tr>
-                <tr><td>%y</td><td>two digit year</td><td>00-99</td></tr>
-
-                <tr><th colspan=3>Month</th></tr>
-                <tr><td>%b</td><td>month, abbreviated</td><td>Jun</td></tr>
-                <tr><td>%B</td><td>month, full length</td><td>June</td></tr>
-                <tr><td>%m</td><td>month, zero padded</td><td>06</td></tr>
-
-                <tr><th colspan=3>Day</th></tr>
-                <tr><td>%a</td><td>weekday, abbreviated</td><td>Sat</td></tr>
-                <tr><td>%A</td><td>weekday, full</td><td>Saturday</td></tr>
-                <tr><td>%d</td><td>day of the month, zero padded</td><td>03</td></tr>
-                <tr><td>%e</td><td>day of the month</td><td>3</td></tr>
-
-                <tr><th colspan=3>Time</th></tr>
-                <tr><td>%H</td><td>hour (24 hour clock) zero padded</td><td>13</td></tr>
-                <tr><td>%l (lowercase L)</td><td>hour (12 hour clock)</td><td>1</td></tr>
-                <tr><td>%I (uppercase i)</td><td>hour (12 hour clock) zero padded</td><td>01</td></tr>
-                <tr><td>%k</td><td>hour (24 hour clock)</td><td>13</td></tr>
-                <tr><td>%M</td><td>minutes, zero padded</td><td>54</td></tr>
-                <tr><td>%p</td><td>upper case AM or PM</td><td>PM</td></tr>
-                <tr><td>%P</td><td>lower case am or pm</td><td>pm</td></tr>
-              </tbody>
-            </table>
+          <input type=radio name=tab hidden id=rice_tab>
+          <div id=rice>
+            <ul>
+              Backlink formatting
+              <li><input type=text name=backlink value='#{conf['backlink']}'> : <span id=backlinkPreview></span></li>
+            </ul>
+            <ul>
+              Time formatting
+              <li><input type=text name=time value='#{conf['time']}'> : <span id=timePreview></span></li>
+              <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>
+              <li>Day: %a, %A, %d, %e</li>
+              <li>Month: %m, %b, %B</li>
+              <li>Year: %y</li>
+              <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i)</li>
+              <li>Month: %M, %p, %P</li>
+            </ul>
           </div>
           <input type=radio name=tab hidden id=keybinds_tab>
           <div id=keybinds>
@@ -879,7 +867,6 @@ options =
     for key, obj of config.main
       ul = $.el 'ul',
         textContent: key
-      hidingul = ul if key is 'Hiding'
       for key, arr of obj
         checked = if conf[key] then "checked" else ""
         description = arr[1]
@@ -888,13 +875,15 @@ options =
         $.bind $('input', li), 'click', $.cb.checked
         $.append ul, li
       $.append main, ul
+
     li = $.el 'li',
       innerHTML: "<button>hidden: #{hiddenNum}</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
-    $.append hidingul, li
     $.bind $('button', li), 'click', options.clearHidden
+    $.append $('ul:nth-child(2)', dialog), li
 
-    $.bind $('textarea[name=flavors]', dialog), 'change', $.cb.value
+    $.bind $('#flavors', dialog), 'change', $.cb.value
     $.bind $('input[name=time]', dialog), 'keyup', options.time
+    $.bind $('input[name=backlink]', dialog), 'keyup', options.backlink
     for input in $$ '#keybinds input', dialog
       input.value = conf[input.name]
       $.bind input, 'keydown', options.keybind
@@ -910,6 +899,7 @@ options =
     $.append d.body, overlay
 
     options.time.call $('input[name=time]', dialog)
+    options.backlink.call $('input[name=backlink]', dialog)
 
     $.bind overlay, 'click', -> $.rm overlay
     $.bind dialog.firstElementChild, 'click', (e) -> e.stopPropagation()
@@ -934,6 +924,10 @@ options =
     Time.foo()
     Time.date = new Date()
     $('#timePreview').textContent = Time.funk Time
+  backlink: (e) ->
+    $.set 'backlink', @value
+    conf['backlink'] = @value
+    $('#backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
 
 cooldown =
   #TODO merge into qr
@@ -1059,13 +1053,14 @@ qr =
       <div class=autohide>
         <form name=post action=http://sys.4chan.org/#{g.BOARD}/post method=POST enctype=multipart/form-data target=iframe id=qr_form>
           <input type=hidden name=resto value=#{THREAD_ID}>
-          <input type=hidden name=recaptcha_challenge_field id=recaptcha_challenge_field>
           <input type=hidden name=mode value=regist>
+          <input type=hidden name=recaptcha_challenge_field id=recaptcha_challenge_field>
+          <input type=hidden name=recaptcha_response_field id=recaptcha_response_field>
           <div><input class=inputtext type=text name=email value='#{email}' placeholder=E-mail>#{qr.spoiler}</div>
           <div><input class=inputtext type=text name=sub placeholder=Subject><input type=submit value=#{submitValue} id=com_submit #{submitDisabled}><label><input type=checkbox id=auto>auto</label></div>
           <div><textarea class=inputtext name=com placeholder=Comment></textarea></div>
           <div><img src=http://www.google.com/recaptcha/api/image?c=#{qr.challenge}></div>
-          <div><input class=inputtext type=text autocomplete=off placeholder=Verification id=dummy><input type=hidden name=recaptcha_response_field id=recaptcha_response_field><span id=captchas>#{$.get('captchas', []).length} captchas</span></div>
+          <div><input class=inputtext type=text autocomplete=off placeholder=Verification id=dummy><span id=captchas>#{$.get('captchas', []).length} captchas</span></div>
           <div><input type=file name=upfile accept='#{qr.acceptFiles}'></div>
         </form>
         <div id=files></div>
@@ -1176,6 +1171,7 @@ qr =
 
   refresh: ->
     $('[name=sub]', qr.el).value = ''
+    $('[name=email]', qr.el).value = if m = d.cookie.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
     $('[name=com]', qr.el).value = ''
     $('[name=recaptcha_response_field]', qr.el).value = ''
     $('[name=spoiler]', qr.el)?.checked = false unless conf['Remember Spoiler']
@@ -1321,7 +1317,7 @@ threadHiding =
       threadHiding.show thread
 
   toggle: (thread) ->
-    if thread.className.indexOf('stub') != -1 or thread.hidden
+    if thread.classList.contains('stub') or thread.hidden
       threadHiding.show thread
     else
       threadHiding.hide thread
@@ -1397,6 +1393,7 @@ updater =
 
     updater.count = $ '#count', dialog
     updater.timer = $ '#timer', dialog
+    updater.br    = $ 'br[clear]'
 
     for input in $$ 'input', dialog
       if input.type is 'checkbox'
@@ -1436,22 +1433,22 @@ updater =
         updater.timer.textContent = ''
         updater.count.textContent = 404
         updater.count.className = 'error'
-        window.clearInterval updater.intervalID
+        clearTimeout updater.timeoutID
         for input in $$ '#com_submit'
           input.disabled = true
           input.value = 404
-        d.title = d.title.match(/.+- /)[0] + 404
+        # XXX trailing spaces are trimmed
+        d.title = d.title.match(/.+-/)[0] + ' 404'
         g.dead = true
         Favicon.update()
         return
 
-      br = $ 'br[clear]'
-      id = Number $('td[id]', br.previousElementSibling)?.id or 0
+      id = Number $('td[id]', updater.br.previousElementSibling)?.id or 0
 
       arr = []
       body = $.el 'body',
         innerHTML: @responseText
-      replies = $$ 'td[id]', body
+      replies = $$ '.reply', body
       while (reply = replies.pop()) and (reply.id > id)
         arr.push reply.parentNode.parentNode.parentNode #table
 
@@ -1467,7 +1464,7 @@ updater =
 
       #XXX add replies in correct order so backlinks resolve
       while reply = arr.pop()
-        $.before br, reply
+        $.before updater.br, reply
       if scroll
         scrollTo 0, d.body.scrollHeight
 
@@ -1595,6 +1592,7 @@ sauce =
           link = $.el 'a',
             textContent: sauce.names[i]
             href: prefix + suffix
+            target: '_blank'
           $.append span, $.tn(' '), link
 
 revealSpoilers =
@@ -1687,6 +1685,8 @@ titlePost =
 
 quoteBacklink =
   init: ->
+    format = conf['backlink'].replace /%id/, "' + id + '"
+    quoteBacklink.funk = Function 'id', "return'#{format}'"
     g.callbacks.push (root) ->
       return if /inline/.test root.className
       # op or reply
@@ -1704,14 +1704,14 @@ quoteBacklink =
         link = $.el 'a',
           href: "##{id}"
           className: 'backlink'
-          textContent: ">>#{id}"
+          textContent: quoteBacklink.funk id
         if conf['Quote Preview']
           $.bind link, 'mouseover', quotePreview.mouseover
           $.bind link, 'mousemove', ui.hover
           $.bind link, 'mouseout',  quotePreview.mouseout
         if conf['Quote Inline']
           $.bind link, 'click', quoteInline.toggle
-        unless container = $ '.container', el
+        unless (container = $ '.container', el) and container.parentNode is el
           container = $.el 'span', className: 'container'
           root = $('.reportbutton', el) or $('span[id^=no]', el)
           $.after root, container
@@ -1854,15 +1854,12 @@ reportButton =
           innerHTML: '[&nbsp;!&nbsp;]'
         $.after span, a
         $.after span, $.tn(' ')
-      $.bind a, 'click', reportButton.cb.report
-  cb:
-    report: (e) ->
-      reportButton.report @
-  report: (target) ->
-    input = $ 'input', target.parentNode
-    input.click()
-    $('input[value="Report"]').click()
-    input.click()
+      $.bind a, 'click', reportButton.report
+  report: ->
+    url = "http://sys.4chan.org/#{g.BOARD}/imgboard.php?mode=report&no=#{@previousElementSibling.childNodes[1].textContent}"
+    id  = "#{NAMESPACE}popup"
+    set = "toolbar=0,scrollbars=0,location=0,status=1,menubar=0,resizable=1,width=685,height=200"
+    window.open url, id, set
 
 threadStats =
   init: ->
@@ -1914,12 +1911,12 @@ unread =
     d.title = d.title.replace /\d+/, unread.replies.length
 
 Favicon =
-  dead: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEUAAAAAAAD/AAA9+90tAAAAAXRSTlMAQObYZgAAADtJREFUCB0FwUERxEAIALDszMG730PNSkBEBSECoU0AEPe0mly5NWprRUcDQAdn68qtkVsj3/84z++CD5u7CsnoBJoaAAAAAElFTkSuQmCC'
-  deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWUlEQVR4XrWSAQoAIAgD/f+njSApsTqjGoTQ5oGWPJMOOs60CzsWwIwz1I4PUIYh+WYEMGQ6I/txw91kP4oA9BdwhKp1My4xQq6e8Q9ANgDJjOErewFiNesV2uGSfGv1/HYAAAAASUVORK5CYII='
+  dead: 'data:image/gif;base64,R0lGODlhEAAQAKECAAAAAP8AAP///////yH5BAEKAAIALAAAAAAQABAAAAIvlI+pq+D9DAgUoFkPDlbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw=='
+  deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABIUlEQVQ4jZ2ScWuDMBDFgw4pIkU0WsoQkWAYIkXZH4N9/+/V3dmfXSrKYIFHwt17j8vdGWNMIkgFuaDgzgQnwRs4EQs5KdolUQtagRN0givEDBTEOjgtGs0Zq8F7cKqqusVxrMQLaDUWcjBSrXkn8gs51tpJSWLk9b3HUa0aNIL5gPBR1/V4kJvR7lTwl8GmAm1Gf9+c3S+89qBHa8502AsmSrtBaEBPbIbj0ah2madlNAPEccdgJDfAtWifBjqWKShRBT6KoiH8QlEUn/qt0CCjnNdmPUwmFWzj9Oe6LpKuZXcwqq88z78Pch3aZU3dPwwc2sWlfZKCW5tWluV8kGvXClLm6dYN4/aUqfCbnEOzNDGhGZbNargvxCzvMGfRJD8UaDVvgkzo6QAAAABJRU5ErkJggg=='
   default: $('link[rel="shortcut icon"]', d.head)?.href or '' #no favicon in `post successful` page
   empty: 'data:image/gif;base64,R0lGODlhEAAQAJEAAAAAAP///9vb2////yH5BAEAAAMALAAAAAAQABAAAAIvnI+pq+D9DBAUoFkPFnbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw=='
-  haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVR4XrWRQQoAIQwD+6L97j7Ih9WTQQxhDqJQCk4Mranuvqod6LgwawSqSuUmWSPw/UNlJlnDAmA2ARjABLYj8ZyCzJHHqOg+GdAKZmKPIQUzuYrxicHqEgHzP9g7M0+hj45sAnRWxtPj3zSPAAAAAElFTkSuQmCC'
-  haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAADFBMVEUAAABmzDP///8AAABet0i+AAAAAXRSTlMAQObYZgAAAExJREFUeF4tyrENgDAMAMFXKuQswQLBG3mOlBnFS1gwDfIYLpEivvjq2MlqjmYvYg5jWEzCwtDSQlwcXKCVLrpFbvLvvSf9uZJ2HusDtJAY7Tkn1oYAAAAASUVORK5CYII='
+  haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCElEQVQ4jZ2S4crCMAxF+0OGDJEPKYrIGKOsiJSx/fJRfSAfTJNyKqXfiuDg0C25N2RJjTGmEVrhTzhw7oStsIEtsVzT4o2Jo9ALThiEM8IdHIgNaHo8mjNWg6/ske8bohPo+63QOLzmooHp8fyAICBSQkVz0QKdsFQEV6WSW/D+7+BbgbIDHcb4Kp61XyjyI16zZ8JemGltQtDBSGxB4/GoN+7TpkkjDCsFArm0IYv3U0BbnYtf8BCy+JytsE0X6VyuKhPPK/GAJ14kvZZDZVV3pZIb8MZr6n4o4PDGKn0S5SdDmyq5PnXQsk+Xbhinp03FFzmHJw6xYRiWm9VxnohZ3vOcxdO8ARmXRvbWdtzQAAAAAElFTkSuQmCC'
+  haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCklEQVQ4jZ2S0WrDMAxF/TBCCKWMYhZKCSGYmFJMSNjD/mhf239qJXNcjBdTWODgRLpXKJKNMaYROuFTOHEehFb4gJZYrunwxsSXMApOmIQzwgOciE1oRjyaM1aDj+yR7xuiHvT9VmgcXnPRwO/9+wWCgEgJFc1FCwzCVhFclUpuw/u3g3cFyg50GPOjePZ+ocjPeM2RCXthpbUFwQAzsQ2Nx6PeuE+bJo0w7BQI5NKGLN5XAW11LX7BQ8jia7bCLl2kc7mqTLzuxAOeeJH0Wk6VVf0oldyEN15T948CDm+sMiZRfjK0pZIbUwcd+3TphnF62lR8kXN44hAbhmG5WQNnT8zynucsnuYJhFpBfkMzqD4AAAAASUVORK5CYII='
 
   update: ->
     l = unread.replies.length
@@ -2458,7 +2455,7 @@ main =
       }
       #qr textarea {
         width: 100%;
-        height: 120px;
+        height: 125px;
       }
       #qr #close, #qr #autohide {
         float: right;

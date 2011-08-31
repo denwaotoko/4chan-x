@@ -1,5 +1,12 @@
 master
 
+2.19.0
+- mayhem
+  backlink formatting
+  distinguishable unread favicons on white backgrounds
+  fix updater refreshing 404'd threads
+  fix backlinks added into inlined quotes
+
 2.18.3
 - mayhem
   fix quote features in expanded comments
