@@ -407,6 +407,8 @@ expandComment =
     for quote in $$ 'a.quotelink', bq
       if quote.getAttribute('href') is quote.hash
         quote.pathname = "/#{g.BOARD}/res/#{threadID}"
+      if quote.hash[1..] is threadID
+        quote.innerHTML += '&nbsp;(OP)'
       if conf['Quote Preview']
         $.bind quote, 'mouseover', quotePreview.mouseover
         $.bind quote, 'mousemove', ui.hover
@@ -1776,6 +1778,9 @@ quoteInline =
     for quote in $$ 'a.quotelink', newInline
       if quote.getAttribute('href') is quote.hash
         quote.pathname = pathname
+    link = $ 'a.quotejs', newInline
+    link.href = "#{pathname}##{id}"
+    link.nextSibling.href = "#{pathname}#q#{id}"
     $.addClass newInline, 'crossquote'
     $.replace inline, newInline
   table: (id, html) ->

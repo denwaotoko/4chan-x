@@ -571,6 +571,9 @@
         if (quote.getAttribute('href') === quote.hash) {
           quote.pathname = "/" + g.BOARD + "/res/" + threadID;
         }
+        if (quote.hash.slice(1) === threadID) {
+          quote.innerHTML += '&nbsp;(OP)';
+        }
         if (conf['Quote Preview']) {
           $.bind(quote, 'mouseover', quotePreview.mouseover);
           $.bind(quote, 'mousemove', ui.hover);
@@ -2230,7 +2233,7 @@
       return $.addClass(this, 'inlined');
     },
     parse: function(req, pathname, id, threadID, inline) {
-      var body, html, newInline, op, quote, reply, _i, _j, _len, _len2, _ref, _ref2;
+      var body, html, link, newInline, op, quote, reply, _i, _j, _len, _len2, _ref, _ref2;
       if (!inline.parentNode) {
         return;
       }
@@ -2262,6 +2265,9 @@
           quote.pathname = pathname;
         }
       }
+      link = $('a.quotejs', newInline);
+      link.href = "" + pathname + "#" + id;
+      link.nextSibling.href = "" + pathname + "#q" + id;
       $.addClass(newInline, 'crossquote');
       return $.replace(inline, newInline);
     },
