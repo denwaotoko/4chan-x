@@ -1042,62 +1042,197 @@ QR =
         textContent: 'Submit'
         disabled: false
       QR.submit() if $('#autopost', QR.qr).checked
+
+
+
   dialog: (text='', tid) ->
     tid or= g.THREAD_ID or ''
     QR.qr = qr = ui.dialog 'qr', top: '0', left: '0', "
-    <a class=close>X</a>
-    <input type=checkbox id=autohide title=autohide>
+    <style>
+      #qr {
+        position: fixed;
+      }
+      #qr .move, .form > div:first-child {
+        padding: 2px;
+      }
+      #qr .float {
+        float: right;
+      }
+      #autohide:not(:checked) ~ .move .float label,
+      #autopost:not(:checked) + label,
+      #dumpmode:not(:checked) + div [for=dumpmode]{
+        opacity: .3;
+      }
+      #autohide:checked ~ .form {
+        height: 0;
+        overflow: hidden;
+      }
+      #qr .error, #qr .error[href] {
+        color: #FFF;
+        background: red;
+        display: block;
+        text-align: center;
+      }
+      .textarea {
+        height: 125px;
+        width: 300px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -moz-resize: both;
+        resize: both
+      }
+      .form {
+        border-top: 1px solid rgba(0, 0, 0, .2);
+      }
+      [contenteditable] {
+        border: 1px solid transparent;
+        box-sizing: border-box;
+        padding: 2px;
+      }
+      [contenteditable]:focus, [contenteditable]:hover {
+        background: #FFF;
+        border-color: #BBB;
+      }
+      .form .linkmail {
+        color: #34345C;
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      #dumpmode:checked ~ output,
+      #dumpmode:not(:checked) ~ #files {
+        display: none;
+      }
+      #files {
+        height: 100px;
+        position: relative;
+      }
+      #files > div {
+        overflow-x: scroll;
+        overflow-y: hidden;
+        position: absolute;
+        top:    0;
+        right:  0;
+        bottom: 0;
+        left:   0;
+        white-space: nowrap;
+      }
+      .thumb {
+        background: #000;
+        height: 80px;
+        width:  80px;
+        margin: 3px 0 0 3px;
+        display: inline-block;
+      }
+      .thumb img {
+        max-height: 100%;
+        max-width:  100%;
+      }
+      #captcha div {
+        background: white;
+        border-top: 1px solid rgba(0, 0, 0, .2);
+        text-align: center;
+      }
+      #captcha img {
+        height: 57px;
+        width: 300px;
+      }
+      #cl {
+        margin: 3px;
+      }
+    </style>
+
+    <input type=checkbox id=autohide hidden>
     <div class=move>
-      <span class=click>
-        <button>File</button>
-        <input form=qr_form placeholder=Subject name=sub>
-        <input form=qr_form placeholder=Name name=name>
-        <input form=qr_form placeholder=Email name=email>
-      </span>
+      <span class=float>Quick Reply | <label for=autohide>Auto hide</label> | <a class=close>⨯</a></span>
+      <span id=submit>Submit</span> | #{if g.REPLY then '<input type=checkbox id=autopost hidden><label for=autopost>Auto post</label>' else 'thread n°'}
     </div>
-    <textarea form=qr_form placeholder=Comment name=com></textarea>
-    <div id=files></div>
-    <form enctype=multipart/form-data method=post action=http://sys.4chan.org/#{g.BOARD}/post target=iframe id=qr_form>
-      <div hidden>
-        <input name=pwd>
-        <input name=mode value=regist>
-        <input name=recaptcha_challenge_field id=challenge>
-        <input name=recaptcha_response_field id=response>
+    <a class=error></a>
+
+
+    <div class=form>
+      <input type=checkbox id=dumpmode hidden>
+      <div>
+        <span class=float><label>File</label> | <label for=dumpmode>Dump</label></span>
+        <span class=commentpostername contenteditable=plaintext-only>Name</span>
+        | <span class=linkmail contenteditable=plaintext-only>E-mail</span>
+        | <span class=filetitle contenteditable=plaintext-only>Subject</span>
       </div>
+
+
+      <output hidden>single file description goes here#{QR.spoiler}</output>
+
+      <div id=files>
+        <div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+          <div class=thumb></div>
+        </div>
+      </div>
+
+      <div class=textarea contenteditable=plaintext-only>Comment</div>
+
       <div id=captcha>
         <div><img></div>
-        <span id=cl>120 Captchas</span>
-        <input id=recaptcha_response_field autocomplete=off>
+        <span id=cl class=float></span>
+        <div contenteditable=plaintext-only>Verification</div>
       </div>
-      <div>
-        <button>Submit</button>
-        #{if g.REPLY then "<label>[<input type=checkbox id=autopost title=autopost> Autopost]</label>" else ''}
-        <input form=qr_form placeholder=Thread name=resto value=#{tid} #{if g.REPLY then 'hidden' else ''}>
-        #{QR.spoiler}
-      </div>
-      <a class=error></span>
+
+    </div>
+
+    <form enctype=multipart/form-data method=post action=http://sys.4chan.org/#{g.BOARD}/post target=iframe hidden>
+      <input name=mode value=regist>
+      <input name=name> <input name=email> <input name=pwd> <input name=sub>
+      <textarea name=com></textarea>
+      <input name=recaptcha_challenge_field> <input name=recaptcha_response_field>
+      <input name=resto value=#{tid} #{if g.REPLY then 'hidden' else ''}>
     </form>
     "
+
+
     #$.bind $('#attach', qr), 'click', QR.attach
     #XXX use dom methods to set values instead of injecting raw user input into your html -_-;
+
     c = d.cookie
     $('[name=name]', qr).value  = if m = c.match(/4chan_name=([^;]+)/)  then decodeURIComponent m[1] else ''
     $('[name=email]', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
     $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
-    $('textarea', qr).value = text
-    QR.cooldown() if conf['Cooldown']
-    $.bind $('button', qr), 'click', QR.attach
+
+
+    #(ta = $ '.textarea', qr).textContent = text
+
+
+    #QR.cooldown() if conf['Cooldown']
+    #$.bind $('button', qr), 'click', QR.attach
+
     $.bind $('.close', qr), 'click', QR.close
-    $.bind $('.click', qr), 'mousedown', (e) -> e.stopPropagation()
-    $.bind $('form', qr), 'submit', QR.submit
-    $.bind $('#recaptcha_response_field', qr), 'keydown', QR.keydown
+    $.bind $('#submit', qr), 'click', QR.submit
+
+    #TODO
+    #for input in $$ '[contenteditable]', qr
+    #  $.bind input, 'focus', QR.placeholderStart
+    #  $.bind input, 'blur',  QR.placeholderEnd
+
+    #press enter to submit
+    #$.bind $('span[contenteditable]', qr), 'keydown', (e) -> QR.submit if e.keyCode is enter or whatever
+
+    $.bind $('#captcha div[contenteditable]', qr), 'keydown', QR.keydown
+
     QR.captchaImg()
     QR.captchaLength()
+
     $.add d.body, qr
-    ta = $ 'textarea', qr
+
+    ###
     l = text.length
     ta.setSelectionRange l, l
     ta.focus()
+    ###
+
   keydown: (e) ->
     kc = e.keyCode
     v = @value
@@ -2415,64 +2550,6 @@ main =
       /* Firefox bug: hidden tables are not hidden */
       [hidden] {
         display: none;
-      }
-
-      #files > input {
-        display: block;
-      }
-      #qr {
-        max-height: 100%;
-        overflow-y: auto;
-        position: fixed;
-      }
-      #qr #autohide, #qr .close {
-        float: right;
-      }
-      #qr .click input {
-        width: 73px;
-      }
-      #qr .click * {
-        float: left;
-      }
-      #qr form {
-        margin: 0;
-      }
-      #qr:not(:hover) #autohide:checked ~ form {
-        height: 0;
-        overflow: hidden;
-      }
-      #qr textarea {
-        border: 0;
-        height: 150px;
-        width: 100%;
-      }
-      #qr #captcha {
-        position: relative;
-      }
-      #qr #files a {
-        position: absolute;
-        left: 0;
-        font-size: 50px;
-        color: red;
-      }
-      #qr #cl {
-        right: 0;
-        padding: 2px;
-        position: absolute;
-      }
-      #qr #recaptcha_response_field {
-        display: inline;
-        width: 100%;
-      }
-      #qr #files input {
-        display: none;
-      }
-      #qr #files img {
-        max-height: 250px;
-        max-width:  250px;
-      }
-      #qr input[name=resto] {
-        width: 80px;
       }
     '
 
