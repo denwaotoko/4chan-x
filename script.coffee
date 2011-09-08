@@ -1052,7 +1052,7 @@ QR =
       #qr {
         position: fixed;
       }
-      #qr .move, .form > div:first-child {
+      #qr .move, .form > div:first-of-type {
         padding: 2px;
       }
       #qr .float {
