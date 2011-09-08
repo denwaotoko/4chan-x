@@ -1066,6 +1066,7 @@ QR =
       #autohide:checked ~ .form {
         height: 0;
         overflow: hidden;
+        border: none;
       }
       #qr .error, #qr .error[href] {
         color: #FFF;
