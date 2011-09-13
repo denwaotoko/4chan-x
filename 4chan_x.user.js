@@ -8,6 +8,7 @@
 // @include        http://boards.4chan.org/*
 // @include        http://sys.4chan.org/*
 // @updateURL      https://github.com/aeosynth/4chan-x/raw/stable/4chan_x.user.js
+// @icon           https://github.com/aeosynth/4chan-x/raw/gh-pages/favicon.png
 // ==/UserScript==
 
 /* LICENSE
@@ -61,14 +62,14 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, NAMESPACE, Recaptcha, SECOND, Time, anonymize, conf, config, cooldown, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, main, nav, nodeInserted, options, qr, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher, _ref;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, NAMESPACE, Recaptcha, SECOND, Time, anonymize, conf, config, cooldown, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, main, nav, nodeInserted, options, qr, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
   config = {
     main: {
       Enhancing: {
         '404 Redirect': [true, 'Redirect dead threads'],
         'Anonymize': [false, 'Make everybody anonymous'],
-        'Keybinds': [false, 'Binds actions to keys'],
+        'Keybinds': [true, 'Binds actions to keys'],
         'Time Formatting': [true, 'Arbitrarily formatted timestamps, using your local time'],
         'Report Button': [true, 'Add report buttons'],
         'Comment Expansion': [true, 'Expand too long comments'],
@@ -115,7 +116,7 @@
         'Indicate OP quote': [true, 'Add \'(OP)\' to OP quotes']
       }
     },
-    flavors: ['http://regex.info/exif.cgi?url=', 'http://iqdb.org/?url=', 'http://google.com/searchbyimage?image_url=', '#http://tineye.com/search?url=', '#http://saucenao.com/search.php?db=999&url=', '#http://imgur.com/upload?url=', '#http://anonym.to/?'].join('\n'),
+    flavors: ['http://regex.info/exif.cgi?url=', 'http://iqdb.org/?url=', 'http://google.com/searchbyimage?image_url=', '#http://tineye.com/search?url=', '#http://saucenao.com/search.php?db=999&url=', '#http://imgur.com/upload?url='].join('\n'),
     time: '%m/%d/%y(%a)%H:%M',
     backlink: '>>%id',
     hotkeys: {
@@ -312,14 +313,17 @@
       script = $.el('script', {
         textContent: "(" + code + ")()"
       });
-      $.append(d.head, script);
+      $.add(d.head, script);
       return $.rm(script);
     },
-    xhr: function(url, cb) {
+    ajax: function(url, cb, type) {
       var r;
+      if (type == null) {
+        type = 'get';
+      }
       r = new XMLHttpRequest();
       r.onload = cb;
-      r.open('get', url, true);
+      r.open(type, url, true);
       r.send();
       return r;
     },
@@ -332,7 +336,7 @@
           return req.callbacks.push(cb);
         }
       } else {
-        req = $.xhr(url, (function() {
+        req = $.ajax(url, (function() {
           var cb, _i, _len, _ref, _results;
           _ref = this.callbacks;
           _results = [];
@@ -361,7 +365,7 @@
       style = $.el('style', {
         textContent: css
       });
-      $.append(d.head, style);
+      $.add(d.head, style);
       return style;
     },
     x: function(path, root) {
@@ -376,12 +380,6 @@
     replace: function(root, el) {
       return root.parentNode.replaceChild(el, root);
     },
-    hide: function(el) {
-      return el.hidden = true;
-    },
-    show: function(el) {
-      return el.hidden = false;
-    },
     addClass: function(el, className) {
       return el.classList.add(className);
     },
@@ -391,7 +389,7 @@
     rm: function(el) {
       return el.parentNode.removeChild(el);
     },
-    append: function() {
+    add: function() {
       var child, children, parent, _i, _len, _results;
       parent = arguments[0], children = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       _results = [];
@@ -729,7 +727,7 @@
     hide: function(reply) {
       var a, div, id, name, table, trip, _ref;
       table = reply.parentNode.parentNode.parentNode;
-      $.hide(table);
+      table.hidden = true;
       if (conf['Show Stubs']) {
         name = $('span.commentpostername', reply).textContent;
         trip = ((_ref = $('span.postertrip', reply)) != null ? _ref.textContent : void 0) || '';
@@ -740,7 +738,7 @@
         div = $.el('div', {
           className: 'stub'
         });
-        $.append(div, a);
+        $.add(div, a);
         $.before(table, div);
       }
       id = reply.id;
@@ -749,7 +747,7 @@
     },
     show: function(table) {
       var id;
-      $.show(table);
+      table.hidden = false;
       id = $('td[id]', table).id;
       delete g.hiddenReplies[id];
       return $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
@@ -871,22 +869,68 @@
       return e.preventDefault();
     },
     keyCode: function(e) {
-      var kc;
-      kc = e.keyCode;
-      if ((65 <= kc && kc <= 90)) {
-        key = String.fromCharCode(kc);
-        if (!e.shiftKey) {
-          key = key.toLowerCase();
+      var c, kc;
+      key = (function() {
+        switch (kc = e.keyCode) {
+          case 8:
+            return '';
+          case 27:
+            return 'Esc';
+          case 37:
+            return 'Left';
+          case 38:
+            return 'Up';
+          case 39:
+            return 'Right';
+          case 40:
+            return 'Down';
+          case 48:
+          case 49:
+          case 50:
+          case 51:
+          case 52:
+          case 53:
+          case 54:
+          case 55:
+          case 56:
+          case 57:
+          case 65:
+          case 66:
+          case 67:
+          case 68:
+          case 69:
+          case 70:
+          case 71:
+          case 72:
+          case 73:
+          case 74:
+          case 75:
+          case 76:
+          case 77:
+          case 78:
+          case 79:
+          case 80:
+          case 81:
+          case 82:
+          case 83:
+          case 84:
+          case 85:
+          case 86:
+          case 87:
+          case 88:
+          case 89:
+          case 90:
+            c = String.fromCharCode(kc);
+            if (e.shiftKey) {
+              return c;
+            } else {
+              return c.toLowerCase();
+            }
+            break;
+          default:
+            return null;
         }
-      } else if ((48 <= kc && kc <= 57)) {
-        key = String.fromCharCode(kc);
-      } else if (kc === 27) {
-        key = 'Esc';
-      } else if (kc === 8) {
-        key = '';
-      } else {
-        key = null;
-      }
+      })();
       if (key) {
         if (e.altKey) {
           key = 'alt+' + key;
@@ -1001,8 +1045,8 @@
       });
       $.bind(prev, 'click', nav.prev);
       $.bind(next, 'click', nav.next);
-      $.append(span, prev, $.tn(' '), next);
-      return $.append(d.body, span);
+      $.add(span, prev, $.tn(' '), next);
+      return $.add(d.body, span);
     },
     prev: function() {
       return nav.scroll(-1);
@@ -1103,15 +1147,15 @@
             innerHTML: "<label><input type=checkbox name='" + key + "' " + checked + ">" + key + "</label><span class=description>: " + description + "</span>"
           });
           $.bind($('input', li), 'click', $.cb.checked);
-          $.append(ul, li);
+          $.add(ul, li);
         }
-        $.append(main, ul);
+        $.add(main, ul);
       }
       li = $.el('li', {
         innerHTML: "<button>hidden: " + hiddenNum + "</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
       });
       $.bind($('button', li), 'click', options.clearHidden);
-      $.append($('ul:nth-child(2)', dialog), li);
+      $.add($('ul:nth-child(2)', dialog), li);
       $.bind($('#flavors', dialog), 'change', $.cb.value);
       $.bind($('input[name=time]', dialog), 'keyup', options.time);
       $.bind($('input[name=backlink]', dialog), 'keyup', options.backlink);
@@ -1130,8 +1174,8 @@
       overlay = $.el('div', {
         id: 'overlay'
       });
-      $.append(overlay, dialog);
-      $.append(d.body, overlay);
+      $.add(overlay, dialog);
+      $.add(d.body, overlay);
       options.time.call($('input[name=time]', dialog));
       options.backlink.call($('input[name=backlink]', dialog));
       $.bind(overlay, 'click', function() {
@@ -1248,7 +1292,7 @@
         name: 'iframe',
         hidden: true
       });
-      $.append(d.body, iframe);
+      $.add(d.body, iframe);
       return $('#recaptcha_response_field').id = '';
     },
     attach: function() {
@@ -1260,7 +1304,7 @@
       $.bind(fileDiv.lastChild, 'click', (function() {
         return $.rm(this.parentNode);
       }));
-      return $.append($('#files', qr.el), fileDiv);
+      return $.add($('#files', qr.el), fileDiv);
     },
     attachNext: function() {
       var file, fileDiv, oldFile;
@@ -1331,7 +1375,7 @@
       $.bind($('img', qr.el), 'click', Recaptcha.reload);
       $.bind($('#dummy', qr.el), 'keydown', Recaptcha.listener);
       $.bind($('#dummy', qr.el), 'keydown', qr.captchaKeydown);
-      return $.append(d.body, qr.el);
+      return $.add(d.body, qr.el);
     },
     message: function(e) {
       var data, duration, fileCount;
@@ -1564,10 +1608,10 @@
       });
       $.before(node, op);
       while (node.nodeName !== 'BLOCKQUOTE') {
-        $.append(op, node);
+        $.add(op, node);
         node = op.nextSibling;
       }
-      $.append(op, node);
+      $.add(op, node);
       op.id = $('input[name]', op).name;
       return op;
     },
@@ -1582,7 +1626,7 @@
       });
       $.before(node, div);
       while (node.nodeName !== 'HR') {
-        $.append(div, node);
+        $.add(div, node);
         node = div.nextSibling;
       }
       node = node.nextElementSibling;
@@ -1655,20 +1699,20 @@
         div = $.el('div', {
           className: 'block'
         });
-        $.append(div, a);
-        $.append(thread, div);
+        $.add(div, a);
+        $.add(thread, div);
         return $.addClass(thread, 'stub');
       } else {
-        $.hide(thread);
-        return $.hide(thread.nextSibling);
+        thread.hidden = true;
+        return thread.nextSibling.hidden = true;
       }
     },
     show: function(thread) {
       var hiddenThreads, id;
       $.rm($('div.block', thread));
       $.removeClass(thread, 'stub');
-      $.show(thread);
-      $.show(thread.nextSibling);
+      thread.hidden = false;
+      thread.nextSibling.hidden = false;
       id = thread.firstChild.id;
       hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
       delete hiddenThreads[id];
@@ -1730,19 +1774,19 @@
           $.bind(input, 'click', updater.updateNow);
         }
       }
-      return $.append(d.body, dialog);
+      return $.add(d.body, dialog);
     },
     cb: {
       verbose: function() {
         if (conf['Verbose']) {
           updater.count.textContent = '+0';
-          return $.show(updater.timer);
+          return updater.timer.hidden = false;
         } else {
           $.extend(updater.count, {
             className: '',
             textContent: 'Thread Updater'
           });
-          return $.hide(updater.timer);
+          return updater.timer.hidden = true;
         }
       },
       autoUpdate: function() {
@@ -1823,7 +1867,7 @@
       }
       url = location.pathname + '?' + Date.now();
       cb = updater.cb.update;
-      return updater.request = $.xhr(url, cb);
+      return updater.request = $.ajax(url, cb);
     }
   };
   watcher = {
@@ -1834,7 +1878,7 @@
         top: '50px',
         left: '0px'
       }, html);
-      $.append(d.body, watcher.dialog);
+      $.add(d.body, watcher.dialog);
       inputs = $$('.op input');
       for (_i = 0, _len = inputs.length; _i < _len; _i++) {
         input = inputs[_i];
@@ -1845,6 +1889,13 @@
         $.before(input, favicon);
       }
       watcher.refresh();
+      if (conf['Auto Watch']) {
+        if (!g.REPLY) {
+          $('.postarea form').action += '?watch';
+        } else if (/watch/.test(location.search) && $('img.favicon').src === Favicon.empty) {
+          watcher.watch(null, g.THREAD_ID);
+        }
+      }
       return $.bind(window, 'storage', function(e) {
         if (e.key === ("" + NAMESPACE + "watched")) {
           return watcher.refresh();
@@ -1869,8 +1920,8 @@
           });
           $.bind(x, 'click', watcher.cb.x);
           link = $.el('a', props);
-          $.append(div, x, $.tn(' '), link);
-          $.append(watcher.dialog, div);
+          $.add(div, x, $.tn(' '), link);
+          $.add(watcher.dialog, div);
         }
       }
       watchedBoard = watched[g.BOARD] || {};
@@ -1948,7 +1999,7 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           s = _ref[_i];
-          if (s[0] !== '#') {
+          if (s && s[0] !== '#') {
             _results.push(s);
           }
         }
@@ -1980,7 +2031,7 @@
               href: prefix + suffix,
               target: '_blank'
             });
-            _results.push($.append(span, $.tn(' '), link));
+            _results.push($.add(span, $.tn(' '), link));
           }
           return _results;
         }
@@ -2007,12 +2058,17 @@
       return g.callbacks.push(Time.node);
     },
     node: function(root) {
-      var day, hour, min, month, s, time, year, _, _ref;
+      var day, hour, min, month, node, tc, time, year, _, _ref;
       if (root.className === 'inline') {
         return;
       }
-      s = $('span[id^=no]', root).previousSibling;
-      _ref = s.textContent.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
+      node = $('span[id]', root).previousSibling;
+      tc = node.textContent;
+      if (tc === ' ') {
+        node = node.previousSibling;
+        tc = node.textContent;
+      }
+      _ref = tc.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
       year = "20" + year;
       month -= 1;
       hour = g.chanOffset + Number(hour);
@@ -2020,7 +2076,7 @@
       time = $.el('time', {
         textContent: ' ' + Time.funk(Time) + ' '
       });
-      return $.replace(s, time);
+      return $.replace(node, time);
     },
     foo: function() {
       var code;
@@ -2165,7 +2221,7 @@
             root = $('.reportbutton', el) || $('span[id^=no]', el);
             $.after(root, container);
           }
-          _results.push($.append(container, $.tn(' '), link));
+          _results.push($.add(container, $.tn(' '), link));
         }
         return _results;
       });
@@ -2202,7 +2258,7 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           inlined = _ref[_i];
           if (hidden = $.id(inlined.name)) {
-            $.show($.x('ancestor::table[1]', hidden));
+            $.x('ancestor::table[1]', hidden).hidden = false;
           }
         }
         return;
@@ -2215,7 +2271,7 @@
             return;
           }
           $.after(this.parentNode, inline);
-          $.hide($.x('ancestor::table[1]', el));
+          $.x('ancestor::table[1]', el).hidden = true;
         } else {
           $.after(root, inline);
         }
@@ -2305,7 +2361,7 @@
         id: 'qp',
         className: 'replyhl'
       });
-      $.append(d.body, qp);
+      $.add(d.body, qp);
       id = this.hash.slice(1);
       if (el = $.id(id)) {
         qp.innerHTML = el.innerHTML;
@@ -2422,7 +2478,7 @@
       dialog.className = 'dialog';
       threadStats.postcountEl = $('#postcount', dialog);
       threadStats.imagecountEl = $('#imagecount', dialog);
-      $.append(d.body, dialog);
+      $.add(d.body, dialog);
       return g.callbacks.push(threadStats.node);
     },
     node: function(root) {
@@ -2479,24 +2535,31 @@
     }
   };
   Favicon = {
+    init: function() {
+      var favicon, href;
+      favicon = $('link[rel="shortcut icon"]', d.head);
+      favicon.type = 'image/x-icon';
+      href = favicon.href;
+      Favicon["default"] = href;
+      return Favicon.unread = /ws/.test(href) ? Favicon.unreadSFW : Favicon.unreadNSFW;
+    },
     dead: 'data:image/gif;base64,R0lGODlhEAAQAKECAAAAAP8AAP///////yH5BAEKAAIALAAAAAAQABAAAAIvlI+pq+D9DAgUoFkPDlbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
-    deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D',
-    "default": ((_ref = $('link[rel="shortcut icon"]', d.head)) != null ? _ref.href : void 0) || '',
     empty: 'data:image/gif;base64,R0lGODlhEAAQAJEAAAAAAP///9vb2////yH5BAEAAAMALAAAAAAQABAAAAIvnI+pq+D9DBAUoFkPFnbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
-    haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D',
-    haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC',
+    unreadDead: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D',
+    unreadSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D',
+    unreadNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC',
     update: function() {
       var clone, favicon, href, l;
       l = unread.replies.length;
       if (g.dead) {
         if (l > 0) {
-          href = Favicon.deadHalo;
+          href = Favicon.unreadDead;
         } else {
           href = Favicon.dead;
         }
       } else {
         if (l > 0) {
-          href = Favicon.halo;
+          href = Favicon.unread;
         } else {
           href = Favicon["default"];
         }
@@ -2554,10 +2617,10 @@
   };
   Recaptcha = {
     init: function() {
-      var el, _i, _len, _ref2;
-      _ref2 = $$('#recaptcha_table a');
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        el = _ref2[_i];
+      var el, _i, _len, _ref;
+      _ref = $$('#recaptcha_table a');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        el = _ref[_i];
         el.tabIndex = 1;
       }
       return $.bind($('#recaptcha_response_field'), 'keydown', Recaptcha.listener);
@@ -2572,13 +2635,13 @@
     }
   };
   nodeInserted = function(e) {
-    var callback, target, _i, _len, _ref2, _results;
+    var callback, target, _i, _len, _ref, _results;
     target = e.target;
     if (target.nodeName === 'TABLE') {
-      _ref2 = g.callbacks;
+      _ref = g.callbacks;
       _results = [];
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        callback = _ref2[_i];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        callback = _ref[_i];
         _results.push(callback(target));
       }
       return _results;
@@ -2601,7 +2664,7 @@
         id: 'iHover',
         src: this.parentNode.href
       });
-      return $.append(d.body, ui.el);
+      return $.add(d.body, ui.el);
     }
   };
   imgPreloading = {
@@ -2707,33 +2770,33 @@
       }
     },
     contract: function(thumb) {
-      $.show(thumb);
+      thumb.hidden = false;
       return $.rm(thumb.nextSibling);
     },
     expand: function(thumb) {
-      var a, filesize, img, max, _, _ref2;
-      $.hide(thumb);
+      var a, filesize, img, max, _, _ref;
+      thumb.hidden = true;
       a = thumb.parentNode;
       img = $.el('img', {
         src: a.href
       });
       if (a.parentNode.className !== 'op') {
         filesize = $('span.filesize', a.parentNode);
-        _ref2 = filesize.textContent.match(/(\d+)x/), _ = _ref2[0], max = _ref2[1];
+        _ref = filesize.textContent.match(/(\d+)x/), _ = _ref[0], max = _ref[1];
         img.style.maxWidth = "-moz-calc(" + max + "px)";
       }
-      return $.append(a, img);
+      return $.add(a, img);
     },
     dialog: function() {
-      var controls, delform, imageType, option, select, _i, _len, _ref2;
+      var controls, delform, imageType, option, select, _i, _len, _ref;
       controls = $.el('div', {
         id: 'imgControls',
         innerHTML: "<select id=imageType name=imageType><option>full</option><option>fit width</option><option>fit height</option><option>fit screen</option></select>        <label>Expand Images<input type=checkbox id=imageExpand></label>"
       });
       imageType = $.get('imageType', 'full');
-      _ref2 = $$('option', controls);
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        option = _ref2[_i];
+      _ref = $$('option', controls);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        option = _ref[_i];
         if (option.textContent === imageType) {
           option.selected = true;
           break;
@@ -2761,7 +2824,7 @@
         className: 'firstrun',
         innerHTML: "        <div id=options>          <div class='reply dialog'>            <p>Click the <strong>4chan X</strong> buttons for options; they are at the top and bottom of the page.</p>            <p>Updater options are in the updater dialog in replies at the bottom-right corner of the window.</p>            <p>If you don't see the buttons, try disabling your userstyles.</p>          </div>        </div>"
       });
-      $.append(d.body, dialog);
+      $.add(d.body, dialog);
       return $.bind(window, 'click', firstRun.close);
     },
     close: function() {
@@ -2773,7 +2836,8 @@
   };
   main = {
     init: function() {
-      var callback, canPost, cutoff, form, hiddenThreads, id, lastChecked, now, op, pathname, table, temp, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref2, _ref3, _ref4, _ref5, _ref6;
+      var callback, canPost, cutoff, form, hiddenThreads, id, lastChecked, now, op, pathname, table, temp, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _ref5;
+      $.unbind(window, 'load', main.init);
       pathname = location.pathname.substring(1).split('/');
       g.BOARD = pathname[0], temp = pathname[1];
       if (temp === 'res') {
@@ -2793,8 +2857,7 @@
       if (!$('#navtopr')) {
         return;
       }
-      Favicon.halo = /ws/.test(Favicon["default"]) ? Favicon.haloSFW : Favicon.haloNSFW;
-      $('link[rel="shortcut icon"]', d.head).setAttribute('type', 'image/x-icon');
+      Favicon.init();
       g.hiddenReplies = $.get("hiddenReplies/" + g.BOARD + "/", {});
       tzOffset = (new Date()).getTimezoneOffset() / 60;
       g.chanOffset = 5 - tzOffset;
@@ -2812,9 +2875,9 @@
             delete hiddenThreads[id];
           }
         }
-        _ref2 = g.hiddenReplies;
-        for (id in _ref2) {
-          timestamp = _ref2[id];
+        _ref = g.hiddenReplies;
+        for (id in _ref) {
+          timestamp = _ref[id];
           if (timestamp < cutoff) {
             delete g.hiddenReplies[id];
           }
@@ -2856,7 +2919,7 @@
       if (conf['Sauce']) {
         sauce.init();
       }
-      if (conf['Reveal Spoilers']) {
+      if (conf['Reveal Spoilers'] && $('.postarea label')) {
         revealSpoilers.init();
       }
       if (conf['Anonymize']) {
@@ -2917,9 +2980,6 @@
         if (conf['Reply Navigation']) {
           nav.init();
         }
-        if (conf['Auto Watch'] && conf['Thread Watcher'] && /watch/.test(location.search) && $('img.favicon').src === Favicon.empty) {
-          watcher.watch(null, g.THREAD_ID);
-        }
       } else {
         if (conf['Index Navigation']) {
           nav.init();
@@ -2933,25 +2993,22 @@
         if (conf['Comment Expansion']) {
           expandComment.init();
         }
-        if (conf['Auto Watch']) {
-          $('.postarea form').action += '?watch';
-        }
       }
-      _ref3 = $$('div.op');
-      for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
-        op = _ref3[_i];
-        _ref4 = g.callbacks;
-        for (_j = 0, _len2 = _ref4.length; _j < _len2; _j++) {
-          callback = _ref4[_j];
+      _ref2 = $$('div.op');
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        op = _ref2[_i];
+        _ref3 = g.callbacks;
+        for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
+          callback = _ref3[_j];
           callback(op);
         }
       }
-      _ref5 = $$('a + table');
-      for (_k = 0, _len3 = _ref5.length; _k < _len3; _k++) {
-        table = _ref5[_k];
-        _ref6 = g.callbacks;
-        for (_l = 0, _len4 = _ref6.length; _l < _len4; _l++) {
-          callback = _ref6[_l];
+      _ref4 = $$('a + table');
+      for (_k = 0, _len3 = _ref4.length; _k < _len3; _k++) {
+        table = _ref4[_k];
+        _ref5 = g.callbacks;
+        for (_l = 0, _len4 = _ref5.length; _l < _len4; _l++) {
+          callback = _ref5[_l];
           callback(table);
         }
       }
@@ -3152,6 +3209,13 @@
       .inlined {\
         opacity: .5;\
       }\
+      .inline td.reply {\
+        background-color: rgba(255, 255, 255, 0.15);\
+        border: 1px solid rgba(128, 128, 128, 0.5);\
+      }\
+      .filetitle, .replytitle, .postername, .commentpostername, .postertrip {\
+        background: none;\
+      }\
 \
       /* Firefox bug: hidden tables are not hidden */\
       [hidden] {\
@@ -3163,5 +3227,9 @@
       }\
     '
   };
-  main.init();
+  if (d.body) {
+    main.init();
+  } else {
+    $.bind(window, 'load', main.init);
+  }
 }).call(this);

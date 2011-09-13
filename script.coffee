@@ -3,7 +3,7 @@ config =
     Enhancing:
       '404 Redirect':       [true,  'Redirect dead threads']
       'Anonymize':          [false, 'Make everybody anonymous']
-      'Keybinds':           [false, 'Binds actions to keys']
+      'Keybinds':           [true,  'Binds actions to keys']
       'Time Formatting':    [true,  'Arbitrarily formatted timestamps, using your local time']
       'Report Button':      [true,  'Add report buttons']
       'Comment Expansion':  [true,  'Expand too long comments']
@@ -50,7 +50,6 @@ config =
     '#http://tineye.com/search?url='
     '#http://saucenao.com/search.php?db=999&url='
     '#http://imgur.com/upload?url='
-    '#http://anonym.to/?'
   ].join '\n'
   time: '%m/%d/%y(%a)%H:%M'
   backlink: '>>%id'
@@ -218,12 +217,12 @@ $.extend $,
   globalEval: (code) ->
     script = $.el 'script',
       textContent: "(#{code})()"
-    $.append d.head, script
+    $.add d.head, script
     $.rm script
-  xhr: (url, cb) ->
+  ajax: (url, cb, type='get') ->
     r = new XMLHttpRequest()
     r.onload = cb
-    r.open 'get', url, true
+    r.open type, url, true
     r.send()
     r
   cache: (url, cb) ->
@@ -233,7 +232,7 @@ $.extend $,
       else
         req.callbacks.push cb
     else
-      req = $.xhr url, (-> cb.call @ for cb in @callbacks)
+      req = $.ajax url, (-> cb.call @ for cb in @callbacks)
       req.callbacks = [cb]
       $.cache.requests[url] = req
   cb:
@@ -246,7 +245,7 @@ $.extend $,
   addStyle: (css) ->
     style = $.el 'style',
       textContent: css
-    $.append d.head, style
+    $.add d.head, style
     style
   x: (path, root=d.body) ->
     d.evaluate(path, root, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).
@@ -255,17 +254,13 @@ $.extend $,
     d.createTextNode s
   replace: (root, el) ->
     root.parentNode.replaceChild el, root
-  hide: (el) ->
-    el.hidden = true
-  show: (el) ->
-    el.hidden = false
   addClass: (el, className) ->
     el.classList.add className
   removeClass: (el, className) ->
     el.classList.remove className
   rm: (el) ->
     el.parentNode.removeChild el
-  append: (parent, children...) ->
+  add: (parent, children...) ->
     for child in children
       parent.appendChild child
   prepend: (parent, child) ->
@@ -518,7 +513,7 @@ replyHiding =
 
   hide: (reply) ->
     table = reply.parentNode.parentNode.parentNode
-    $.hide table
+    table.hidden = true
 
     if conf['Show Stubs']
       name = $('span.commentpostername', reply).textContent
@@ -529,7 +524,7 @@ replyHiding =
 
       div = $.el 'div',
         className: 'stub'
-      $.append div, a
+      $.add div, a
       $.before table, div
 
     id = reply.id
@@ -537,7 +532,7 @@ replyHiding =
     $.set "hiddenReplies/#{g.BOARD}/", g.hiddenReplies
 
   show: (table) ->
-    $.show table
+    table.hidden = false
 
     id = $('td[id]', table).id
     delete g.hiddenReplies[id]
@@ -624,19 +619,24 @@ keybinds =
     e.preventDefault()
 
   keyCode: (e) ->
-    kc = e.keyCode
-    if 65 <= kc <= 90 #A-Z
-      key = String.fromCharCode kc
-      if !e.shiftKey
-        key = key.toLowerCase()
-    else if 48 <= kc <= 57 #0-9
-      key = String.fromCharCode kc
-    else if kc is 27
-      key = 'Esc'
-    else if kc is 8
-      key = ''
-    else
-      key = null
+    key = switch kc = e.keyCode
+      when 8
+        ''
+      when 27
+        'Esc'
+      when 37
+        'Left'
+      when 38
+        'Up'
+      when 39
+        'Right'
+      when 40
+        'Down'
+      when 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90 #0-9, A-Z
+        c = String.fromCharCode kc
+        if e.shiftKey then c else c.toLowerCase()
+      else
+        null
     if key
       if e.altKey  then key = 'alt+' + key
       if e.ctrlKey then key = 'ctrl+' + key
@@ -722,8 +722,8 @@ nav =
     $.bind prev, 'click', nav.prev
     $.bind next, 'click', nav.next
 
-    $.append span, prev, $.tn(' '), next
-    $.append d.body, span
+    $.add span, prev, $.tn(' '), next
+    $.add d.body, span
 
   prev: ->
     nav.scroll -1
@@ -875,13 +875,13 @@ options =
         li = $.el 'li',
           innerHTML: "<label><input type=checkbox name='#{key}' #{checked}>#{key}</label><span class=description>: #{description}</span>"
         $.bind $('input', li), 'click', $.cb.checked
-        $.append ul, li
-      $.append main, ul
+        $.add ul, li
+      $.add main, ul
 
     li = $.el 'li',
       innerHTML: "<button>hidden: #{hiddenNum}</button> <span class=description>: Forget all hidden posts. Useful if you accidentally hide a post and have `show stubs` disabled."
     $.bind $('button', li), 'click', options.clearHidden
-    $.append $('ul:nth-child(2)', dialog), li
+    $.add $('ul:nth-child(2)', dialog), li
 
     $.bind $('#flavors', dialog), 'change', $.cb.value
     $.bind $('input[name=time]', dialog), 'keyup', options.time
@@ -897,8 +897,8 @@ options =
     https://bugzilla.mozilla.org/show_bug.cgi?id=579776
     ###
     overlay = $.el 'div', id: 'overlay'
-    $.append overlay, dialog
-    $.append d.body, overlay
+    $.add overlay, dialog
+    $.add d.body, overlay
 
     options.time.call $('input[name=time]', dialog)
     options.backlink.call $('input[name=backlink]', dialog)
@@ -986,7 +986,7 @@ qr =
     iframe = $.el 'iframe',
       name: 'iframe'
       hidden: true
-    $.append d.body, iframe
+    $.add d.body, iframe
 
     #hack - nuke id so it doesn't grab focus when reloading
     $('#recaptcha_response_field').id = ''
@@ -995,7 +995,7 @@ qr =
     fileDiv = $.el 'div', innerHTML: "<input type=file name=upfile accept='#{qr.acceptFiles}'><a>X</a>"
     $.bind fileDiv.firstChild, 'change', qr.validateFileSize
     $.bind fileDiv.lastChild, 'click', (-> $.rm @parentNode)
-    $.append $('#files', qr.el), fileDiv
+    $.add $('#files', qr.el), fileDiv
 
   attachNext: ->
     fileDiv = $.rm $('#files div', qr.el)
@@ -1081,7 +1081,7 @@ qr =
     $.bind $('#dummy',             qr.el), 'keydown', Recaptcha.listener
     $.bind $('#dummy',             qr.el), 'keydown', qr.captchaKeydown
 
-    $.append d.body, qr.el
+    $.add d.body, qr.el
 
   message: (e) ->
     $('iframe[name=iframe]').src = 'about:blank'
@@ -1273,9 +1273,9 @@ threading =
       className: 'op'
     $.before node, op
     while node.nodeName isnt 'BLOCKQUOTE'
-      $.append op, node
+      $.add op, node
       node = op.nextSibling
-    $.append op, node #add the blockquote
+    $.add op, node #add the blockquote
     op.id = $('input[name]', op).name
     op
 
@@ -1289,7 +1289,7 @@ threading =
     $.before node, div
 
     while node.nodeName isnt 'HR'
-      $.append div, node
+      $.add div, node
       node = div.nextSibling
 
     node = node.nextElementSibling #skip text node
@@ -1351,18 +1351,18 @@ threadHiding =
       div = $.el 'div',
         className: 'block'
 
-      $.append div, a
-      $.append thread, div
+      $.add div, a
+      $.add thread, div
       $.addClass thread, 'stub'
     else
-      $.hide thread
-      $.hide thread.nextSibling
+      thread.hidden = true
+      thread.nextSibling.hidden = true
 
   show: (thread) ->
     $.rm $ 'div.block', thread
     $.removeClass thread, 'stub'
-    $.show thread
-    $.show thread.nextSibling
+    thread.hidden = false
+    thread.nextSibling.hidden = false
 
     id = thread.firstChild.id
 
@@ -1413,18 +1413,18 @@ updater =
       else if input.type is 'button'
         $.bind input, 'click', updater.updateNow
 
-    $.append d.body, dialog
+    $.add d.body, dialog
 
   cb:
     verbose: ->
       if conf['Verbose']
         updater.count.textContent = '+0'
-        $.show updater.timer
+        updater.timer.hidden = false
       else
         $.extend updater.count,
           className: ''
           textContent: 'Thread Updater'
-        $.hide updater.timer
+        updater.timer.hidden = true
     autoUpdate: ->
       if @checked
         updater.timeoutID = setTimeout updater.timeout, 1000
@@ -1494,13 +1494,13 @@ updater =
     updater.request?.abort()
     url = location.pathname + '?' + Date.now() # fool the cache
     cb = updater.cb.update
-    updater.request = $.xhr url, cb
+    updater.request = $.ajax url, cb
 
 watcher =
   init: ->
     html = '<div class=move>Thread Watcher</div>'
     watcher.dialog = ui.dialog 'watcher', top: '50px', left: '0px', html
-    $.append d.body, watcher.dialog
+    $.add d.body, watcher.dialog
 
     #add watch buttons
     inputs = $$ '.op input'
@@ -1512,6 +1512,12 @@ watcher =
 
     #populate watcher, display watch buttons
     watcher.refresh()
+
+    if conf['Auto Watch']
+      unless g.REPLY
+        $('.postarea form').action += '?watch'
+      else if /watch/.test(location.search) and $('img.favicon').src is Favicon.empty
+        watcher.watch null, g.THREAD_ID
 
     $.bind window, 'storage', (e) -> watcher.refresh() if e.key is "#{NAMESPACE}watched"
 
@@ -1527,8 +1533,8 @@ watcher =
         $.bind x, 'click', watcher.cb.x
         link = $.el 'a', props
 
-        $.append div, x, $.tn(' '), link
-        $.append watcher.dialog, div
+        $.add div, x, $.tn(' '), link
+        $.add watcher.dialog, div
 
     watchedBoard = watched[g.BOARD] or {}
     for favicon in $$ 'img.favicon'
@@ -1584,7 +1590,7 @@ anonymize =
 
 sauce =
   init: ->
-    sauce.prefixes = (s for s in (conf['flavors'].split '\n') when s[0] != '#')
+    sauce.prefixes = (s for s in (conf['flavors'].split '\n') when s and s[0] != '#')
     sauce.names = (prefix.match(/(\w+)\./)[1] for prefix in sauce.prefixes)
     g.callbacks.push (root) ->
       return if root.className is 'inline'
@@ -1595,7 +1601,7 @@ sauce =
             textContent: sauce.names[i]
             href: prefix + suffix
             target: '_blank'
-          $.append span, $.tn(' '), link
+          $.add span, $.tn(' '), link
 
 revealSpoilers =
   init: ->
@@ -1612,9 +1618,13 @@ Time =
     g.callbacks.push Time.node
   node: (root) ->
     return if root.className is 'inline'
-    s = $('span[id^=no]', root).previousSibling
+    node = $('span[id]', root).previousSibling
+    tc = node.textContent
+    if tc is ' '
+      node = node.previousSibling
+      tc = node.textContent
     [_, month, day, year, hour, min] =
-      s.textContent.match /(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/
+      tc.match /(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/
     year = "20#{year}"
     month -= 1 #months start at 0
     hour = g.chanOffset + Number hour
@@ -1623,7 +1633,7 @@ Time =
 
     time = $.el 'time',
       textContent: ' ' + Time.funk(Time) + ' '
-    $.replace s, time
+    $.replace node, time
   foo: ->
     code = conf['time'].replace /%([A-Za-z])/g, (s, c) ->
       if c of Time.formatters
@@ -1717,7 +1727,7 @@ quoteBacklink =
           container = $.el 'span', className: 'container'
           root = $('.reportbutton', el) or $('span[id^=no]', el)
           $.after root, container
-        $.append container, $.tn(' '), link
+        $.add container, $.tn(' '), link
 
 quoteInline =
   init: ->
@@ -1736,7 +1746,7 @@ quoteInline =
       $.removeClass @, 'inlined'
       for inlined in $$ 'input', table
         if hidden = $.id inlined.name
-          $.show $.x 'ancestor::table[1]', hidden
+          $.x('ancestor::table[1]', hidden).hidden = false
       return
     root = if @parentNode.nodeName is 'FONT' then @parentNode else if @nextSibling then @nextSibling else @
     if el = $.id id
@@ -1744,7 +1754,7 @@ quoteInline =
       if @className is 'backlink'
         return if $("a.backlink[href='##{id}']", el)
         $.after @parentNode, inline
-        $.hide $.x 'ancestor::table[1]', el
+        $.x('ancestor::table[1]', el).hidden = true
       else
         $.after root, inline
     else
@@ -1801,7 +1811,7 @@ quotePreview =
     qp = ui.el = $.el 'div',
       id: 'qp'
       className: 'replyhl'
-    $.append d.body, qp
+    $.add d.body, qp
 
     id = @hash[1..]
     if el = $.id id
@@ -1875,7 +1885,7 @@ threadStats =
     dialog.className = 'dialog'
     threadStats.postcountEl  = $ '#postcount',  dialog
     threadStats.imagecountEl = $ '#imagecount', dialog
-    $.append d.body, dialog
+    $.add d.body, dialog
     g.callbacks.push threadStats.node
   node: (root) ->
     return if root.className
@@ -1916,23 +1926,28 @@ unread =
     d.title = d.title.replace /\d+/, unread.replies.length
 
 Favicon =
+  init: ->
+    favicon = $  'link[rel="shortcut icon"]', d.head
+    favicon.type = 'image/x-icon'
+    {href} = favicon
+    Favicon.default = href
+    Favicon.unread = if /ws/.test href then Favicon.unreadSFW else Favicon.unreadNSFW
   dead: 'data:image/gif;base64,R0lGODlhEAAQAKECAAAAAP8AAP///////yH5BAEKAAIALAAAAAAQABAAAAIvlI+pq+D9DAgUoFkPDlbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw=='
-  deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D'
-  default: $('link[rel="shortcut icon"]', d.head)?.href or '' #no favicon in `post successful` page
   empty: 'data:image/gif;base64,R0lGODlhEAAQAJEAAAAAAP///9vb2////yH5BAEAAAMALAAAAAAQABAAAAIvnI+pq+D9DBAUoFkPFnbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw=='
-  haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D'
-  haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC'
+  unreadDead: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D'
+  unreadSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D'
+  unreadNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC'
 
   update: ->
     l = unread.replies.length
     if g.dead
       if l > 0
-        href = Favicon.deadHalo
+        href = Favicon.unreadDead
       else
         href = Favicon.dead
     else
       if l > 0
-        href = Favicon.halo
+        href = Favicon.unread
       else
         href = Favicon.default
 
@@ -1985,7 +2000,7 @@ imgHover =
     ui.el = $.el 'img'
       id: 'iHover'
       src: @parentNode.href
-    $.append d.body, ui.el
+    $.add d.body, ui.el
 
 imgPreloading =
   init: ->
@@ -2051,11 +2066,11 @@ imgExpand =
       imgExpand.expand thumb
 
   contract: (thumb) ->
-    $.show thumb
+    thumb.hidden = false
     $.rm thumb.nextSibling
 
   expand: (thumb) ->
-    $.hide thumb
+    thumb.hidden = true
     a = thumb.parentNode
     img = $.el 'img',
       src: a.href
@@ -2063,7 +2078,7 @@ imgExpand =
       filesize = $ 'span.filesize', a.parentNode
       [_, max] = filesize.textContent.match /(\d+)x/
       img.style.maxWidth = "-moz-calc(#{max}px)"
-    $.append a, img
+    $.add a, img
 
   dialog: ->
     controls = $.el 'div',
@@ -2158,7 +2173,7 @@ firstRun =
             <p>If you don't see the buttons, try disabling your userstyles.</p>
           </div>
         </div>"
-    $.append d.body, dialog
+    $.add d.body, dialog
 
     $.bind window, 'click', firstRun.close
 
@@ -2170,6 +2185,7 @@ firstRun =
 
 main =
   init: ->
+    $.unbind window, 'load', main.init
     pathname = location.pathname.substring(1).split('/')
     [g.BOARD, temp] = pathname
     if temp is 'res'
@@ -2187,8 +2203,7 @@ main =
     if not $ '#navtopr'
       return
 
-    Favicon.halo = if /ws/.test Favicon.default then Favicon.haloSFW else Favicon.haloNSFW
-    $('link[rel="shortcut icon"]', d.head).setAttribute 'type', 'image/x-icon'
+    Favicon.init()
     g.hiddenReplies = $.get "hiddenReplies/#{g.BOARD}/", {}
     tzOffset = (new Date()).getTimezoneOffset() / 60
     # GMT -8 is given as +480; would GMT +8 be -480 ?
@@ -2248,7 +2263,7 @@ main =
     if conf['Sauce']
       sauce.init()
 
-    if conf['Reveal Spoilers']
+    if conf['Reveal Spoilers'] and $('.postarea label')
       revealSpoilers.init()
 
     if conf['Anonymize']
@@ -2308,10 +2323,6 @@ main =
       if conf['Reply Navigation']
         nav.init()
 
-      if conf['Auto Watch'] and conf['Thread Watcher'] and
-        /watch/.test(location.search) and $('img.favicon').src is Favicon.empty
-          watcher.watch null, g.THREAD_ID
-
     else #not reply
       if conf['Index Navigation']
         nav.init()
@@ -2324,9 +2335,6 @@ main =
 
       if conf['Comment Expansion']
         expandComment.init()
-
-      if conf['Auto Watch']
-        $('.postarea form').action += '?watch'
 
     for op in $$ 'div.op'
       for callback in g.callbacks
@@ -2531,6 +2539,13 @@ main =
       .inlined {
         opacity: .5;
       }
+      .inline td.reply {
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(128, 128, 128, 0.5);
+      }
+      .filetitle, .replytitle, .postername, .commentpostername, .postertrip {
+        background: none;
+      }
 
       /* Firefox bug: hidden tables are not hidden */
       [hidden] {
@@ -2542,4 +2557,8 @@ main =
       }
     '
 
-main.init()
+#XXX Opera will load early if script is saved w/o .user
+if d.body
+  main.init()
+else
+  $.bind window, 'load', main.init
