@@ -3010,7 +3010,7 @@
       if (origin === 'http://sys.4chan.org') {
         return qr.message(data);
       } else if (data !== VERSION && confirm('An updated version of 4chan X is available, would you like to install it now?')) {
-        return window.location = 'https://github.com/aeosynth/4chan-x/raw/stable/4chan_x.user.js';
+        return window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js';
       }
     },
     css: '\
