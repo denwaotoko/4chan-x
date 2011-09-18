@@ -6,7 +6,7 @@
 // @license        MIT; http://en.wikipedia.org/wiki/Mit_license
 // @include        http://boards.4chan.org/*
 // @include        http://sys.4chan.org/*
-// @icon           https://github.com/aeosynth/4chan-x/raw/gh-pages/favicon.png
+// @icon           https://raw.github.com/aeosynth/4chan-x/gh-pages/favicon.png
 // ==/UserScript==
 
 /* LICENSE
@@ -60,7 +60,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, NAMESPACE, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, main, nav, nodeInserted, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher, _ref;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, nodeInserted, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
   config = {
     main: {
@@ -114,7 +114,7 @@
         'Indicate OP quote': [true, 'Add \'(OP)\' to OP quotes']
       }
     },
-    flavors: ['http://regex.info/exif.cgi?url=', 'http://iqdb.org/?url=', 'http://google.com/searchbyimage?image_url=', '#http://tineye.com/search?url=', '#http://saucenao.com/search.php?db=999&url=', '#http://imgur.com/upload?url='].join('\n'),
+    flavors: ['http://iqdb.org/?url=', 'http://google.com/searchbyimage?image_url=', '#http://regex.info/exif.cgi?url=', '#http://tineye.com/search?url=', '#http://saucenao.com/search.php?db=999&url=', '#http://imgur.com/upload?url='].join('\n'),
     time: '%m/%d/%y(%a)%H:%M',
     backlink: '>>%id',
     hotkeys: {
@@ -197,24 +197,12 @@
   };
   ui = {
     dialog: function(id, position, html) {
-      var el, left, top, _ref, _ref2;
+      var el, saved;
       el = d.createElement('div');
       el.className = 'reply dialog';
       el.innerHTML = html;
       el.id = id;
-      left = position.left, top = position.top;
-      left = (_ref = localStorage["" + NAMESPACE + id + "Left"]) != null ? _ref : left;
-      top = (_ref2 = localStorage["" + NAMESPACE + id + "Top"]) != null ? _ref2 : top;
-      if (left) {
-        el.style.left = left;
-      } else {
-        el.style.right = 0;
-      }
-      if (top) {
-        el.style.top = top;
-      } else {
-        el.style.bottom = 0;
-      }
+      el.style.cssText = (saved = localStorage["" + NAMESPACE + id + ".position"]) ? saved : position;
       el.querySelector('div.move').addEventListener('mousedown', ui.dragstart, false);
       return el;
     },
@@ -257,8 +245,7 @@
       var el, id;
       el = ui.el;
       id = el.id;
-      localStorage["" + NAMESPACE + id + "Left"] = el.style.left;
-      localStorage["" + NAMESPACE + id + "Top"] = el.style.top;
+      localStorage["" + NAMESPACE + id + ".position"] = el.style.cssText;
       d.removeEventListener('mousemove', ui.drag, false);
       return d.removeEventListener('mouseup', ui.dragend, false);
     },
@@ -650,7 +637,7 @@
       }
     },
     parse: function(req, pathname, thread, a) {
-      var body, br, link, next, quote, reply, table, tables, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _results;
+      var body, br, href, link, next, quote, reply, table, tables, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _results;
       if (req.status !== 200) {
         a.textContent = "" + req.status + " " + req.statusText;
         $.unbind(a, 'click', expandThread.cb.toggle);
@@ -670,8 +657,10 @@
         _ref2 = $$('a.quotelink', reply);
         for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
           quote = _ref2[_j];
-          if (quote.getAttribute('href') === quote.hash) {
+          if ((href = quote.getAttribute('href')) === quote.hash) {
             quote.pathname = pathname;
+          } else if (href !== quote.href) {
+            quote.href = "res/" + href;
           }
         }
         link = $('a.quotejs', reply);
@@ -1259,20 +1248,20 @@
       }
     },
     attach: function() {
-      var div, file, files;
+      var box, file, files;
       files = $('#files', QR.qr);
-      div = $.el('div', {
+      box = $.el('span', {
         innerHTML: "<input type=file name=upfile accept='" + QR.accept + "'><img alt='click here'><a class=x>X</a>"
       });
-      file = $('input', div);
+      file = $('input', box);
       $.bind(file, 'change', QR.change);
-      $.bind($('img', div), 'click', function() {
+      $.bind($('img', box), 'click', function() {
         return this.previousSibling.click();
       });
-      $.bind($('.x', div), 'click', function() {
+      $.bind($('.x', box), 'click', function() {
         return $.rm(this.parentNode);
       });
-      $.add(files, div);
+      $.add(files, box);
       return file.click();
     },
     captchaNode: function(e) {
@@ -1713,11 +1702,8 @@
         html += "<div><label title='" + title + "'>" + name + "<input name='" + name + "' type=checkbox " + checked + "></label></div>";
       }
       checked = conf['Auto Update'] ? 'checked' : '';
-      html += "      <div><label title='Controls whether *this* thread auotmatically updates or not'>Auto Update This<input name='Auto Update This' type=checkbox " + checked + "></label></div>      <div><label>Interval (s)<input name=Interval value=" + conf['Interval'] + " type=text></label></div>      <div><input value='Update Now' type=button></div>";
-      dialog = ui.dialog('updater', {
-        bottom: '0',
-        right: '0'
-      }, html);
+      html += "      <div><label title='Controls whether *this* thread automatically updates or not'>Auto Update This<input name='Auto Update This' type=checkbox " + checked + "></label></div>      <div><label>Interval (s)<input name=Interval value=" + conf['Interval'] + " type=text></label></div>      <div><input value='Update Now' type=button></div>";
+      dialog = ui.dialog('updater', 'bottom: 0; right: 0;', html);
       updater.count = $('#count', dialog);
       updater.timer = $('#timer', dialog);
       updater.br = $('br[clear]');
@@ -1845,10 +1831,7 @@
     init: function() {
       var favicon, html, input, inputs, _i, _len;
       html = '<div class=move>Thread Watcher</div>';
-      watcher.dialog = ui.dialog('watcher', {
-        top: '50px',
-        left: '0px'
-      }, html);
+      watcher.dialog = ui.dialog('watcher', 'top: 50px; left: 0px;', html);
       $.add(d.body, watcher.dialog);
       inputs = $$('.op input');
       for (_i = 0, _len = inputs.length; _i < _len; _i++) {
@@ -1970,7 +1953,7 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           s = _ref[_i];
-          if (s[0] !== '#') {
+          if (s && s[0] !== '#') {
             _results.push(s);
           }
         }
@@ -2029,12 +2012,12 @@
       return g.callbacks.push(Time.node);
     },
     node: function(root) {
-      var day, hour, min, month, s, time, year, _, _ref;
+      var day, hour, min, month, node, posttime, time, year, _, _ref;
       if (root.className === 'inline') {
         return;
       }
-      s = $('span[id^=no]', root).previousSibling;
-      _ref = s.textContent.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
+      node = (posttime = $('.posttime', root)) ? posttime : $('span[id]', root).previousSibling;
+      _ref = node.textContent.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
       year = "20" + year;
       month -= 1;
       hour = g.chanOffset + Number(hour);
@@ -2042,7 +2025,7 @@
       time = $.el('time', {
         textContent: ' ' + Time.funk(Time) + ' '
       });
-      return $.replace(s, time);
+      return $.replace(node, time);
     },
     foo: function() {
       var code;
@@ -2257,7 +2240,7 @@
       return $.addClass(this, 'inlined');
     },
     parse: function(req, pathname, id, threadID, inline) {
-      var body, html, link, newInline, op, quote, reply, _i, _j, _len, _len2, _ref, _ref2;
+      var body, href, html, link, newInline, op, quote, reply, _i, _j, _len, _len2, _ref, _ref2;
       if (!inline.parentNode) {
         return;
       }
@@ -2285,8 +2268,10 @@
       _ref2 = $$('a.quotelink', newInline);
       for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
         quote = _ref2[_j];
-        if (quote.getAttribute('href') === quote.hash) {
+        if ((href = quote.getAttribute('href')) === quote.hash) {
           quote.pathname = pathname;
+        } else if (!g.REPLY && href !== quote.href) {
+          quote.href = "res/" + href;
         }
       }
       link = $('a.quotejs', newInline);
@@ -2325,7 +2310,7 @@
       var el, id, qp, quote, replyID, threadID, _i, _len, _ref, _results;
       qp = ui.el = $.el('div', {
         id: 'qp',
-        className: 'replyhl'
+        className: 'reply'
       });
       $.add(d.body, qp);
       id = this.hash.slice(1);
@@ -2437,10 +2422,7 @@
       threadStats.posts = 1;
       threadStats.images = $('.op img[md5]') ? 1 : 0;
       html = "<div class=move><span id=postcount>" + threadStats.posts + "</span> / <span id=imagecount>" + threadStats.images + "</span></div>";
-      dialog = ui.dialog('stats', {
-        bottom: '0px',
-        left: '0px'
-      }, html);
+      dialog = ui.dialog('stats', 'bottom: 0; left: 0;', html);
       dialog.className = 'dialog';
       threadStats.postcountEl = $('#postcount', dialog);
       threadStats.imagecountEl = $('#imagecount', dialog);
@@ -2501,24 +2483,31 @@
     }
   };
   Favicon = {
+    init: function() {
+      var favicon, href;
+      favicon = $('link[rel="shortcut icon"]', d.head);
+      favicon.type = 'image/x-icon';
+      href = favicon.href;
+      Favicon["default"] = href;
+      return Favicon.unread = /ws/.test(href) ? Favicon.unreadSFW : Favicon.unreadNSFW;
+    },
     dead: 'data:image/gif;base64,R0lGODlhEAAQAKECAAAAAP8AAP///////yH5BAEKAAIALAAAAAAQABAAAAIvlI+pq+D9DAgUoFkPDlbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
-    deadHalo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D',
-    "default": ((_ref = $('link[rel="shortcut icon"]', d.head)) != null ? _ref.href : void 0) || '',
     empty: 'data:image/gif;base64,R0lGODlhEAAQAJEAAAAAAP///9vb2////yH5BAEAAAMALAAAAAAQABAAAAIvnI+pq+D9DBAUoFkPFnbs7lFZKIJOJJ3MyraoB14jFpOcVMpzrnF3OKlZYsMWowAAOw==',
-    haloSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D',
-    haloNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC',
+    unreadDead: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANhJREFUOMutU0EKwjAQzEPFgyBFei209gOKINh6tL3qO3yAB9OHWPTeMZsmJaRpiNjAkE1mMt1stgwA+wdsFgM1oHE4FXmSpWUcRzWBYtozNfKAYdCHCrQuosX9tlk+CBS7NKMMbMF7vXoJtC7Om8HwhXzbCWCSn6qBJHd74FIBVS1jm7czYFSsq7gvpY0s6+ThJwc4743EHnGkIW2YAW+AphkMPj6DJE1LXW3fFUhD2pHBsTznLKCIFCstC3nGNvQZnQa6kX4yMGfdyi7OZaB7wZy93Cx/4xfgv/s+XYFMrAAAAABJRU5ErkJggg%3D%3D',
+    unreadSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAN9JREFUOMtj+P//PwMlmIEqBkDBfxie2NdVVVFaMikzPXsuCIPYIDFkNWANSAb815t+GI5B/Jj8iQfjapafBWEQG5saDBegK0ja8Ok9EH/AJofXBTBFlUf+/wPi/7jkcYYBCLef/v9/9pX//+cAMYiNLo/uAgZQYMVVLzsLcnYF0GaQ5otv/v+/9BpiEEgMJAdSA1JLlAGXgAZcfoNswGfcBpQDowoW2vi8AFIDUothwOQJvVXIgYUrEEFsqFoGYqLxA7HRiNUAWEIiyQBkGpaUsclhMwCWFpBpvHJUyY0AmdYZKFRtAsoAAAAASUVORK5CYII%3D',
+    unreadNSFW: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOBJREFUOMtj+P//PwMlmIEqBkDBfxie2DWxqqykYlJ6dtZcEAaxQWLIasAakAz4n3bGGI5B/JiJ8QfjlsefBWEQG5saDBegKyj5lPQeiD9gk8PrApiinv+V/4D4Py55nGEAwrP+t/9f/X82EM8Bs9Hl0V3AAAqsuGXxZ0HO7vlf8Q+k+eb/i0B8CWwQSAwkB1IDUkuUAbeAmm/9v4ww4DMeA8pKyifBQhufF0BqQGoxDJjcO7kKObBwBSKIDVXLQEw0fiA2GrEaAEtIJBmATMOSMjY5bAbA0gIyjVeOKrkRAMefDK/b7ecEAAAAAElFTkSuQmCC',
     update: function() {
       var clone, favicon, href, l;
       l = unread.replies.length;
       if (g.dead) {
         if (l > 0) {
-          href = Favicon.deadHalo;
+          href = Favicon.unreadDead;
         } else {
           href = Favicon.dead;
         }
       } else {
         if (l > 0) {
-          href = Favicon.halo;
+          href = Favicon.unread;
         } else {
           href = Favicon["default"];
         }
@@ -2575,13 +2564,13 @@
     return location.href = url;
   };
   nodeInserted = function(e) {
-    var callback, target, _i, _len, _ref2, _results;
+    var callback, target, _i, _len, _ref, _results;
     target = e.target;
     if (target.nodeName === 'TABLE') {
-      _ref2 = g.callbacks;
+      _ref = g.callbacks;
       _results = [];
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        callback = _ref2[_i];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        callback = _ref[_i];
         _results.push(callback(target));
       }
       return _results;
@@ -2714,7 +2703,7 @@
       return $.rm(thumb.nextSibling);
     },
     expand: function(thumb) {
-      var a, filesize, img, max, _, _ref2;
+      var a, filesize, img, max, _, _ref;
       thumb.hidden = true;
       a = thumb.parentNode;
       img = $.el('img', {
@@ -2722,21 +2711,21 @@
       });
       if (a.parentNode.className !== 'op') {
         filesize = $('span.filesize', a.parentNode);
-        _ref2 = filesize.textContent.match(/(\d+)x/), _ = _ref2[0], max = _ref2[1];
+        _ref = filesize.textContent.match(/(\d+)x/), _ = _ref[0], max = _ref[1];
         img.style.maxWidth = "-moz-calc(" + max + "px)";
       }
       return $.add(a, img);
     },
     dialog: function() {
-      var controls, delform, imageType, option, select, _i, _len, _ref2;
+      var controls, delform, imageType, option, select, _i, _len, _ref;
       controls = $.el('div', {
         id: 'imgControls',
         innerHTML: "<select id=imageType name=imageType><option>full</option><option>fit width</option><option>fit height</option><option>fit screen</option></select>        <label>Expand Images<input type=checkbox id=imageExpand></label>"
       });
       imageType = $.get('imageType', 'full');
-      _ref2 = $$('option', controls);
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        option = _ref2[_i];
+      _ref = $$('option', controls);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        option = _ref[_i];
         if (option.textContent === imageType) {
           option.selected = true;
           break;
@@ -2774,9 +2763,10 @@
       return $.unbind(window, 'click', firstRun.close);
     }
   };
-  main = {
+  Main = {
     init: function() {
-      var callback, cutoff, hiddenThreads, id, lastChecked, now, op, pathname, table, temp, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref2, _ref3, _ref4, _ref5, _ref6;
+      var callback, cutoff, hiddenThreads, id, lastChecked, now, op, pathname, table, temp, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _ref5;
+      $.unbind(window, 'load', Main.init);
       pathname = location.pathname.substring(1).split('/');
       g.BOARD = pathname[0], temp = pathname[1];
       if (temp === 'res') {
@@ -2796,8 +2786,8 @@
       if (!$('#navtopr')) {
         return;
       }
-      Favicon.halo = /ws/.test(Favicon["default"]) ? Favicon.haloSFW : Favicon.haloNSFW;
-      $('link[rel="shortcut icon"]', d.head).type = 'image/x-icon';
+      $.bind(window, 'message', Main.message);
+      Favicon.init();
       g.hiddenReplies = $.get("hiddenReplies/" + g.BOARD + "/", {});
       tzOffset = (new Date()).getTimezoneOffset() / 60;
       g.chanOffset = 5 - tzOffset;
@@ -2807,6 +2797,7 @@
       lastChecked = $.get('lastChecked', 0);
       now = Date.now();
       if (lastChecked < now - 1 * DAY) {
+        $.set('lastChecked', now);
         cutoff = now - 7 * DAY;
         hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
         for (id in hiddenThreads) {
@@ -2815,18 +2806,17 @@
             delete hiddenThreads[id];
           }
         }
-        _ref2 = g.hiddenReplies;
-        for (id in _ref2) {
-          timestamp = _ref2[id];
+        _ref = g.hiddenReplies;
+        for (id in _ref) {
+          timestamp = _ref[id];
           if (timestamp < cutoff) {
             delete g.hiddenReplies[id];
           }
         }
         $.set("hiddenThreads/" + g.BOARD + "/", hiddenThreads);
         $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
-        $.set('lastChecked', now);
       }
-      $.addStyle(main.css);
+      $.addStyle(Main.css);
       threading.init();
       if (g.REPLY && (id = location.hash.slice(1)) && /\d/.test(id[0]) && !$.id(id)) {
         scrollTo(0, d.body.scrollHeight);
@@ -2912,21 +2902,21 @@
           expandComment.init();
         }
       }
-      _ref3 = $$('div.op');
-      for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
-        op = _ref3[_i];
-        _ref4 = g.callbacks;
-        for (_j = 0, _len2 = _ref4.length; _j < _len2; _j++) {
-          callback = _ref4[_j];
+      _ref2 = $$('div.op');
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        op = _ref2[_i];
+        _ref3 = g.callbacks;
+        for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
+          callback = _ref3[_j];
           callback(op);
         }
       }
-      _ref5 = $$('a + table');
-      for (_k = 0, _len3 = _ref5.length; _k < _len3; _k++) {
-        table = _ref5[_k];
-        _ref6 = g.callbacks;
-        for (_l = 0, _len4 = _ref6.length; _l < _len4; _l++) {
-          callback = _ref6[_l];
+      _ref4 = $$('a + table');
+      for (_k = 0, _len3 = _ref4.length; _k < _len3; _k++) {
+        table = _ref4[_k];
+        _ref5 = g.callbacks;
+        for (_l = 0, _len4 = _ref5.length; _l < _len4; _l++) {
+          callback = _ref5[_l];
           callback(table);
         }
       }
@@ -2934,6 +2924,13 @@
       options.init();
       if (!$.get('firstrun')) {
         return firstRun.init();
+      }
+    },
+    message: function(e) {
+      var data, origin;
+      origin = e.origin, data = e.data;
+      if (origin === 'http://sys.4chan.org') {
+        return qr.message(data);
       }
     },
     css: '\
@@ -3071,7 +3068,7 @@
         border: 1px solid;\
         padding-bottom: 5px;\
       }\
-      #qp input {\
+      #qp input, #qp .inline {\
         display: none;\
       }\
       .qphl {\
@@ -3081,7 +3078,7 @@
         opacity: .5;\
       }\
       .inline td.reply {\
-        background-color: rgba(252, 252, 252, 0.15);\
+        background-color: rgba(255, 255, 255, 0.15);\
         border: 1px solid rgba(128, 128, 128, 0.5);\
       }\
       .filetitle, .replytitle, .postername, .commentpostername, .postertrip {\
@@ -3094,5 +3091,9 @@
       }\
     '
   };
-  main.init();
+  if (d.body) {
+    Main.init();
+  } else {
+    $.bind(window, 'load', Main.init);
+  }
 }).call(this);
