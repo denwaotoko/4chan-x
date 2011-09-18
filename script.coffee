@@ -1082,10 +1082,23 @@ QR =
       .form {
         border-top: 1px solid rgba(0, 0, 0, .2);
       }
+      .secondrow span, .secondrow label {
+        display: inline-block;
+        min-width: 10px;
+      }
+      .secondrow label {
+        padding: 3px;
+      }
       [contenteditable] {
         border: 1px solid transparent;
         box-sizing: border-box;
         padding: 2px;
+      }
+      [contenteditable]:empty:not(:focus) {
+        opacity: .7;
+      }
+      [contenteditable]:empty:not(:focus)::after {
+        content: attr(title);
       }
       [contenteditable]:focus, [contenteditable]:hover {
         background: #FFF;
@@ -1149,11 +1162,11 @@ QR =
 
     <div class=form>
       <input type=checkbox id=dumpmode hidden>
-      <div>
+      <div class=secondrow>
         <span class=float><label>File</label> | <label for=dumpmode>Dump</label></span>
-        <span class=commentpostername contenteditable=plaintext-only>Name</span>
-        | <span class=linkmail contenteditable=plaintext-only>E-mail</span>
-        | <span class=filetitle contenteditable=plaintext-only>Subject</span>
+        <span class=commentpostername title=Name contenteditable=plaintext-only></span>
+        | <span class=linkmail title=E-mail contenteditable=plaintext-only></span>
+        | <span class=filetitle title=Subject contenteditable=plaintext-only></span>
       </div>
 
 
@@ -1162,22 +1175,15 @@ QR =
       <div id=files>
         <div>
           <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
-          <div class=thumb></div>
         </div>
       </div>
 
-      <div class=textarea contenteditable=plaintext-only>Comment</div>
+      <div class=textarea title=Comment contenteditable=plaintext-only></div>
 
       <div id=captcha>
         <div><img></div>
         <span id=cl class=float></span>
-        <div contenteditable=plaintext-only>Verification</div>
+        <div title=Verification contenteditable=plaintext-only></div>
       </div>
 
     </div>
@@ -1200,20 +1206,13 @@ QR =
     $('[name=email]', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
     $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
 
-
     #(ta = $ '.textarea', qr).textContent = text
-
 
     #QR.cooldown() if conf['Cooldown']
     #$.bind $('button', qr), 'click', QR.attach
 
     $.bind $('.close', qr), 'click', QR.close
     $.bind $('#submit', qr), 'click', QR.submit
-
-    #TODO
-    #for input in $$ '[contenteditable]', qr
-    #  $.bind input, 'focus', QR.placeholderStart
-    #  $.bind input, 'blur',  QR.placeholderEnd
 
     #press enter to submit
     #$.bind $('span[contenteditable]', qr), 'keydown', (e) -> QR.submit if e.keyCode is enter or whatever
