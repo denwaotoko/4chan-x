@@ -1,1 +1,1 @@
-window.postMessage('2.19.4', '*');
+window.postMessage('2.20.0', '*');
