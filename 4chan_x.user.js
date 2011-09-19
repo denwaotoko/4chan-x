@@ -2039,17 +2039,12 @@
       return g.callbacks.push(Time.node);
     },
     node: function(root) {
-      var day, hour, min, month, node, tc, time, year, _, _ref;
+      var day, hour, min, month, node, posttime, time, year, _, _ref;
       if (root.className === 'inline') {
         return;
       }
-      node = $('span[id]', root).previousSibling;
-      tc = node.textContent;
-      if (tc === ' ') {
-        node = node.previousSibling;
-        tc = node.textContent;
-      }
-      _ref = tc.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
+      node = (posttime = $('.posttime', root)) ? posttime : $('span[id]', root).previousSibling;
+      _ref = node.textContent.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
       year = "20" + year;
       month -= 1;
       hour = g.chanOffset + Number(hour);
@@ -3008,7 +3003,7 @@
       var data, origin;
       origin = e.origin, data = e.data;
       if (origin === 'http://sys.4chan.org') {
-        return qr.message(data);
+        return qr.message(e);
       } else if (data !== VERSION && confirm('An updated version of 4chan X is available, would you like to install it now?')) {
         return window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js';
       }

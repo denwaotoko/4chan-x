@@ -1616,13 +1616,9 @@ Time =
     g.callbacks.push Time.node
   node: (root) ->
     return if root.className is 'inline'
-    node = $('span[id]', root).previousSibling
-    tc = node.textContent
-    if tc is ' '
-      node = node.previousSibling
-      tc = node.textContent
+    node = if posttime = $('.posttime', root) then posttime else $('span[id]', root).previousSibling
     [_, month, day, year, hour, min] =
-      tc.match /(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/
+      node.textContent.match /(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/
     year = "20#{year}"
     month -= 1 #months start at 0
     hour = g.chanOffset + Number hour
@@ -2356,7 +2352,7 @@ Main =
   message: (e) ->
     {origin, data} = e
     if origin is 'http://sys.4chan.org'
-      qr.message data
+      qr.message e
     else if data isnt VERSION and confirm 'An updated version of 4chan X is available, would you like to install it now?'
       window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js'
 
