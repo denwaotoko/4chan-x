@@ -1372,6 +1372,11 @@
       $('[name=email]', qr).value = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('[name=pwd]', qr).value = (m = c.match(/4chan_pass=([^;]+)/)) ? decodeURIComponent(m[1]) : $('input[name=pwd]').value;
       (ta = $('.textarea', qr)).textContent = text;
+      $.bind(ta, 'blur', function() {
+        if (this.innerHTML === '<br>') {
+          return this.innerHTML = null;
+        }
+      });
       $.bind($('.close', qr), 'click', QR.close);
       $.bind($('#submit', qr), 'click', QR.submit);
       $.bind($('#captcha div[contenteditable]', qr), 'keydown', QR.keydown);

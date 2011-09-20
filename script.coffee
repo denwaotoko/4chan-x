@@ -1208,6 +1208,7 @@ QR =
     $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
 
     (ta = $ '.textarea', qr).textContent = text
+    $.bind ta, 'blur', -> @innerHTML = null if @innerHTML is '<br>'
 
     #QR.cooldown() if conf['Cooldown']
     #$.bind $('button', qr), 'click', QR.attach
