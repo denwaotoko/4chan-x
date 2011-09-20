@@ -1206,7 +1206,10 @@ QR =
     $('[name=email]', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
     $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
 
-    #(ta = $ '.textarea', qr).textContent = text
+    (ta = $ '.textarea', qr).textContent = text
+    #to refactor?
+    #instead of qr.quote launching qr.dialog, use qr.quote within qr.dialog if getSelection().toString()
+    ta.innerHTML = ta.innerHTML.replace /\n/g, '<br>'
 
     #QR.cooldown() if conf['Cooldown']
     #$.bind $('button', qr), 'click', QR.attach
@@ -1224,11 +1227,8 @@ QR =
 
     $.add d.body, qr
 
-    ###
-    l = text.length
-    ta.setSelectionRange l, l
     ta.focus()
-    ###
+    getSelection().setPosition ta.lastChild
 
   keydown: (e) ->
     kc = e.keyCode

@@ -1358,7 +1358,7 @@
       }
     },
     dialog: function(text, tid) {
-      var c, m, qr;
+      var c, m, qr, ta;
       if (text == null) {
         text = '';
       }
@@ -1371,17 +1371,16 @@
       $('[name=name]', qr).value = (m = c.match(/4chan_name=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('[name=email]', qr).value = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('[name=pwd]', qr).value = (m = c.match(/4chan_pass=([^;]+)/)) ? decodeURIComponent(m[1]) : $('input[name=pwd]').value;
+      (ta = $('.textarea', qr)).textContent = text;
+      ta.innerHTML = ta.innerHTML.replace(/\n/g, '<br>');
       $.bind($('.close', qr), 'click', QR.close);
       $.bind($('#submit', qr), 'click', QR.submit);
       $.bind($('#captcha div[contenteditable]', qr), 'keydown', QR.keydown);
       QR.captchaImg();
       QR.captchaLength();
-      return $.add(d.body, qr);
-      /*
-          l = text.length
-          ta.setSelectionRange l, l
-          ta.focus()
-          */
+      $.add(d.body, qr);
+      ta.focus();
+      return getSelection().setPosition(ta.lastChild);
     },
     keydown: function(e) {
       var kc, v;
