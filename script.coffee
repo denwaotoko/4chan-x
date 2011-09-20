@@ -1077,7 +1077,8 @@ QR =
         overflow-x: hidden;
         overflow-y: auto;
         -moz-resize: both;
-        resize: both
+        resize: both;
+        white-space: pre-wrap;
       }
       .form {
         border-top: 1px solid rgba(0, 0, 0, .2);
@@ -1207,9 +1208,6 @@ QR =
     $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
 
     (ta = $ '.textarea', qr).textContent = text
-    #to refactor?
-    #instead of qr.quote launching qr.dialog, use qr.quote within qr.dialog if getSelection().toString()
-    ta.innerHTML = ta.innerHTML.replace /\n/g, '<br>'
 
     #QR.cooldown() if conf['Cooldown']
     #$.bind $('button', qr), 'click', QR.attach
@@ -1227,8 +1225,8 @@ QR =
 
     $.add d.body, qr
 
-    ta.focus()
-    getSelection().setPosition ta.lastChild
+    getSelection().selectAllChildren ta
+    getSelection().collapseToEnd()
 
   keydown: (e) ->
     kc = e.keyCode
