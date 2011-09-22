@@ -6,6 +6,7 @@
 // @license        MIT; http://en.wikipedia.org/wiki/Mit_license
 // @include        http://boards.4chan.org/*
 // @include        http://sys.4chan.org/*
+// @run-at         document-start
 // @icon           https://raw.github.com/aeosynth/4chan-x/gh-pages/favicon.png
 // ==/UserScript==
 
@@ -60,7 +61,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, nodeInserted, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, firstRun, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, nodeInserted, options, pathname, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, temp, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
   config = {
     main: {
@@ -501,6 +502,14 @@
     val = conf[key];
     conf[key] = $.get(key, val);
   }
+  pathname = location.pathname.substring(1).split('/');
+  g.BOARD = pathname[0], temp = pathname[1];
+  if (temp === 'res') {
+    g.REPLY = temp;
+    g.THREAD_ID = pathname[2];
+  } else {
+    g.PAGENUM = parseInt(temp) || 0;
+  }
   $$ = function(selector, root) {
     if (root == null) {
       root = d.body;
@@ -595,7 +604,7 @@
       }
     },
     toggle: function(thread) {
-      var a, backlink, num, pathname, prev, table, threadID, _i, _len, _ref, _ref2, _results;
+      var a, backlink, num, prev, table, threadID, _i, _len, _ref, _ref2, _results;
       threadID = thread.firstChild.id;
       pathname = "/" + g.BOARD + "/res/" + threadID;
       a = $('a.omittedposts', thread);
@@ -1111,7 +1120,7 @@
       var arr, checked, description, dialog, hiddenNum, hiddenThreads, html, input, key, li, main, obj, overlay, ul, _i, _len, _ref, _ref2;
       hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
       hiddenNum = Object.keys(g.hiddenReplies).length + Object.keys(hiddenThreads).length;
-      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=rice_tab>rice</label> | <label for=keybinds_tab>keybinds</label>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>support throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>          </div>        </div>        <hr>        <div id=content>          <input type=radio name=tab hidden id=main_tab checked>          <div id=main></div>          <input type=radio name=tab hidden id=flavors_tab>          <textarea name=flavors id=flavors>" + conf['flavors'] + "</textarea>          <input type=radio name=tab hidden id=rice_tab>          <div id=rice>            <ul>              Backlink formatting              <li><input type=text name=backlink value='" + conf['backlink'] + "'> : <span id=backlinkPreview></span></li>            </ul>            <ul>              Time formatting              <li><input type=text name=time value='" + conf['time'] + "'> : <span id=timePreview></span></li>              <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>              <li>Day: %a, %A, %d, %e</li>              <li>Month: %m, %b, %B</li>              <li>Year: %y</li>              <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>              <li>Minutes: %M</li>            </ul>          </div>          <input type=radio name=tab hidden id=keybinds_tab>          <div id=keybinds>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
+      html = "      <div class='reply dialog'>        <div id=optionsbar>          <div id=floaty>            <label for=main_tab>Main</label> | <label for=flavors_tab>Sauce</label> | <label for=rice_tab>Rice</label> | <label for=keybinds_tab>Keybinds</label>          </div>          <div id=credits>            <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |            <a href=http://chat.now.im/x/aeos>Support Throd</a> |            <a href=https://github.com/aeosynth/4chan-x/issues>GitHub</a> |            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>          </div>        </div>        <hr>        <div id=content>          <input type=radio name=tab hidden id=main_tab checked>          <div id=main></div>          <input type=radio name=tab hidden id=flavors_tab>          <textarea name=flavors id=flavors>" + conf['flavors'] + "</textarea>          <input type=radio name=tab hidden id=rice_tab>          <div id=rice>            <ul>              Backlink formatting              <li><input type=text name=backlink value='" + conf['backlink'] + "'> : <span id=backlinkPreview></span></li>            </ul>            <ul>              Time formatting              <li><input type=text name=time value='" + conf['time'] + "'> : <span id=timePreview></span></li>              <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>              <li>Day: %a, %A, %d, %e</li>              <li>Month: %m, %b, %B</li>              <li>Year: %y</li>              <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>              <li>Minutes: %M</li>            </ul>          </div>          <input type=radio name=tab hidden id=keybinds_tab>          <div id=keybinds>            <table>              <tbody>                <tr><th>Actions</th><th>Keybinds</th></tr>                <tr><td>Close Options or QR</td><td><input type=text name=close></td></tr>                <tr><td>Quick spoiler</td><td><input type=text name=spoiler></td></tr>                <tr><td>Open QR with post number inserted</td><td><input type=text name=openQR></td></tr>                <tr><td>Open QR without post number inserted</td><td><input type=text name=openEmptyQR></td></tr>                <tr><td>Submit post</td><td><input type=text name=submit></td></tr>                <tr><td>Select next reply</td><td><input type=text name=nextReply ></td></tr>                <tr><td>Select previous reply</td><td><input type=text name=previousReply></td></tr>                <tr><td>See next thread</td><td><input type=text name=nextThread></td></tr>                <tr><td>See previous thread</td><td><input type=text name=previousThread></td></tr>                <tr><td>Jump to the next page</td><td><input type=text name=nextPage></td></tr>                <tr><td>Jump to the previous page</td><td><input type=text name=previousPage></td></tr>                <tr><td>Jump to page 0</td><td><input type=text name=zero></td></tr>                <tr><td>Open thread in current tab</td><td><input type=text name=openThread></td></tr>                <tr><td>Open thread in new tab</td><td><input type=text name=openThreadTab></td></tr>                <tr><td>Expand thread</td><td><input type=text name=expandThread></td></tr>                <tr><td>Watch thread</td><td><input type=text name=watch></td></tr>                <tr><td>Hide thread</td><td><input type=text name=hide></td></tr>                <tr><td>Expand selected image</td><td><input type=text name=expandImages></td></tr>                <tr><td>Expand all images</td><td><input type=text name=expandAllImages></td></tr>                <tr><td>Update now</td><td><input type=text name=update></td></tr>                <tr><td>Reset the unread count to 0</td><td><input type=text name=unreadCountTo0></td></tr>              </tbody>            </table>          </div>        </div>      </div>    ";
       dialog = $.el('div', {
         id: 'options',
         innerHTML: html
@@ -1213,7 +1222,6 @@
         name: 'iframe',
         hidden: true
       }));
-      $.bind(window, 'message', QR.receive);
       $('#recaptcha_response_field').id = '';
       holder = $('#recaptcha_challenge_field_holder');
       $.bind(holder, 'DOMNodeInserted', QR.captchaNode);
@@ -1288,7 +1296,7 @@
       captchas.push(captcha);
       $.set('captchas', captchas);
       el.value = '';
-      Recaptcha.reload();
+      QR.captchaReload();
       return QR.captchaLength(captchas);
     },
     captchaShift: function() {
@@ -1363,10 +1371,7 @@
         text = '';
       }
       tid || (tid = g.THREAD_ID || '');
-      QR.qr = qr = ui.dialog('qr', {
-        top: '0',
-        left: '0'
-      }, "    <style>      #qr {        position: fixed;      }      #qr .move, .form > div:first-of-type {        padding: 2px;      }      #qr .float {        float: right;      }      #autohide:not(:checked) ~ .move .float label,      #autopost:not(:checked) + label,      #dumpmode:not(:checked) + div [for=dumpmode]{        opacity: .3;      }      #autohide:checked ~ .form {        height: 0;        overflow: hidden;        border: none;      }      #qr .error, #qr .error[href] {        color: #FFF;        background: red;        display: block;        text-align: center;      }      .textarea {        height: 125px;        width: 300px;        overflow-x: hidden;        overflow-y: auto;        -moz-resize: both;        resize: both;        white-space: pre-wrap;      }      .form {        border-top: 1px solid rgba(0, 0, 0, .2);      }      .secondrow span, .secondrow label {        display: inline-block;        min-width: 10px;      }      .secondrow label {        padding: 3px;      }      [contenteditable] {        border: 1px solid transparent;        box-sizing: border-box;        padding: 2px;      }      [contenteditable]:empty:not(:focus)::after {        content: attr(title);        color: grey;      }      [contenteditable]:focus, [contenteditable]:hover {        background: #FFF;        border-color: #BBB;      }      .form .linkmail {        color: #34345C;        font-weight: 700;        text-decoration: underline;      }      #dumpmode:checked ~ output,      #dumpmode:not(:checked) ~ #files {        display: none;      }      #files {        height: 100px;        position: relative;      }      #files > div {        overflow-x: scroll;        overflow-y: hidden;        position: absolute;        top:    0;        right:  0;        bottom: 0;        left:   0;        white-space: nowrap;      }      .thumb {        background: #000;        height: 80px;        width:  80px;        margin: 3px 0 0 3px;        display: inline-block;      }      .thumb img {        max-height: 100%;        max-width:  100%;      }      #captcha div {        background: white;        border-top: 1px solid rgba(0, 0, 0, .2);        text-align: center;      }      #captcha img {        height: 57px;        width: 300px;      }      #cl {        margin: 3px;      }    </style>    <input type=checkbox id=autohide hidden>    <div class=move>      <span class=float>Quick Reply | <label for=autohide>Auto hide</label> | <a class=close>⨯</a></span>      <span id=submit>Submit</span> | " + (g.REPLY ? '<input type=checkbox id=autopost hidden><label for=autopost>Auto post</label>' : 'thread n°') + "    </div>    <a class=error></a>    <div class=form>      <input type=checkbox id=dumpmode hidden>      <div class=secondrow>        <span class=float><label>File</label> | <label for=dumpmode>Dump</label></span>        <span class=commentpostername title=Name contenteditable=plaintext-only></span>        | <span class=linkmail title=E-mail contenteditable=plaintext-only></span>        | <span class=filetitle title=Subject contenteditable=plaintext-only></span>      </div>      <output hidden>single file description goes here" + QR.spoiler + "</output>      <div id=files>        <div>          <div class=thumb></div>        </div>      </div>      <div class=textarea title=Comment contenteditable=plaintext-only></div>      <div id=captcha>        <div><img></div>        <span id=cl class=float></span>        <div title=Verification contenteditable=plaintext-only></div>      </div>    </div>    ");
+      QR.qr = qr = ui.dialog('qr', 'top: 0; right: 0;', "    <style>      #qr {        position: fixed;      }      #qr .move, .form > div:first-of-type {        padding: 2px;      }      #qr .float {        float: right;      }      #autohide:not(:checked) ~ .move .float label,      #autopost:not(:checked) + label,      #dumpmode:not(:checked) + div [for=dumpmode]{        opacity: .3;      }      #autohide:checked ~ .form {        height: 0;        overflow: hidden;        border: none;      }      #qr .error, #qr .error[href] {        color: #FFF;        background: red;        display: block;        text-align: center;      }      .textarea {        height: 125px;        width: 300px;        overflow-x: hidden;        overflow-y: auto;        -moz-resize: both;        resize: both;        white-space: pre-wrap;      }      .form {        border-top: 1px solid rgba(0, 0, 0, .2);      }      .secondrow span, .secondrow label {        display: inline-block;        min-width: 10px;      }      .secondrow label {        padding: 3px;      }      [contenteditable] {        border: 1px solid transparent;        box-sizing: border-box;        padding: 2px;      }      [contenteditable]:empty:not(:focus)::after {        content: attr(title);        color: grey;      }      [contenteditable]:focus, [contenteditable]:hover {        background: #FFF;        border-color: #BBB;      }      .form .linkmail {        color: #34345C;        font-weight: 700;        text-decoration: underline;      }      #dumpmode:checked ~ output,      #dumpmode:not(:checked) ~ #files {        display: none;      }      #files {        height: 100px;        position: relative;      }      #files > div {        overflow-x: scroll;        overflow-y: hidden;        position: absolute;        top:    0;        right:  0;        bottom: 0;        left:   0;        white-space: nowrap;      }      .thumb {        background: #000;        height: 80px;        width:  80px;        margin: 3px 0 0 3px;        display: inline-block;      }      .thumb img {        max-height: 100%;        max-width:  100%;      }      #captcha div {        background: white;        border-top: 1px solid rgba(0, 0, 0, .2);        text-align: center;      }      #captcha img {        height: 57px;        width: 300px;      }      #cl {        margin: 3px;      }    </style>    <input type=checkbox id=autohide hidden>    <div class=move>      <span class=float>Quick Reply | <label for=autohide>Auto hide</label> | <a class=close>⨯</a></span>      <span id=submit>Submit</span> | " + (g.REPLY ? '<input type=checkbox id=autopost hidden><label for=autopost>Auto post</label>' : 'thread n°') + "    </div>    <a class=error></a>    <div class=form>      <input type=checkbox id=dumpmode hidden>      <div class=secondrow>        <span class=float><label>File</label> | <label for=dumpmode>Dump</label></span>        <span class=commentpostername title=Name contenteditable=plaintext-only></span>        | <span class=linkmail title=E-mail contenteditable=plaintext-only></span>        | <span class=filetitle title=Subject contenteditable=plaintext-only></span>      </div>      <output hidden>single file description goes here" + QR.spoiler + "</output>      <div id=files>        <div>          <div class=thumb></div>        </div>      </div>      <div class=textarea title=Comment contenteditable=plaintext-only></div>      <div id=captcha>        <div><img></div>        <span id=cl class=float></span>        <div title=Verification contenteditable=plaintext-only></div>      </div>    </div>    ");
       c = d.cookie;
       $('.commentpostername', qr).textContent = (m = c.match(/4chan_name=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('.linkmail', qr).textContent = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
@@ -1429,19 +1434,18 @@
       ta.focus();
       return (_base = $('[name=resto]', qr)).value || (_base.value = tid);
     },
-    receive: function(e) {
-      var cooldown, data, qr, row, tc, _ref, _ref2;
+    receive: function(data) {
+      var cooldown, qr, row, tc, _ref, _ref2;
       $('iframe[name=iframe]').src = 'about:blank';
       qr = QR.qr;
       row = (_ref = $('#files input[form]', qr)) != null ? _ref.parentNode : void 0;
-      data = e.data;
       if (data) {
         if (QR.op) {
           window.location = data;
+          return;
         }
-        return;
         data = JSON.parse(data);
-        $.extend($('a.error', QR.qr), data);
+        $.extend($('a.error', qr), data);
         tc = data.textContent;
         if (tc === 'Error: Duplicate file entry detected.') {
           if (row) {
@@ -1456,7 +1460,7 @@
       if (row) {
         $.rm(row);
       }
-      if (conf['Persistent QR'] || ((_ref2 = $('#files input', QR.qr)) != null ? _ref2.files.length : void 0)) {
+      if (conf['Persistent QR'] || ((_ref2 = $('#files input', qr)) != null ? _ref2.files.length : void 0)) {
         QR.reset();
       } else {
         QR.close();
@@ -1490,7 +1494,7 @@
       }
       qr = QR.qr;
       $('.error', qr).textContent = '';
-      if ((el = $('#recaptcha_response_field', qr)).value) {
+      if (e && (el = $('#recaptcha_response_field', qr)).value) {
         QR.captchaPush(el);
       }
       if (!(captcha = QR.captchaShift())) {
@@ -1545,13 +1549,15 @@
         };
         if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
           textContent = node.textContent, href = node.href;
-          alert(textContent);
           data = JSON.stringify({
             textContent: textContent,
             href: href
           });
         } else if (node = $('meta')) {
           data = node.content.match(/url=(.+)/)[1];
+          if (/#/.test(data)) {
+            data = '';
+          }
         }
         return parent.postMessage(data, '*');
       });
@@ -2196,7 +2202,7 @@
       });
     },
     toggle: function(e) {
-      var el, hidden, id, inline, inlined, pathname, root, table, threadID, _i, _len, _ref;
+      var el, hidden, id, inline, inlined, root, table, threadID, _i, _len, _ref;
       if (e.shiftKey || e.altKey || e.ctrlKey || e.button !== 0) {
         return;
       }
@@ -2767,16 +2773,8 @@
   };
   Main = {
     init: function() {
-      var callback, cutoff, hiddenThreads, id, lastChecked, now, op, pathname, table, temp, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _ref5;
-      $.unbind(window, 'load', Main.init);
-      pathname = location.pathname.substring(1).split('/');
-      g.BOARD = pathname[0], temp = pathname[1];
-      if (temp === 'res') {
-        g.REPLY = temp;
-        g.THREAD_ID = pathname[2];
-      } else {
-        g.PAGENUM = parseInt(temp) || 0;
-      }
+      var callback, cutoff, hiddenThreads, id, lastChecked, now, op, table, timestamp, tzOffset, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _ref5;
+      $.unbind(document, 'DOMContentLoaded', Main.init);
       if (location.hostname === 'sys.4chan.org') {
         QR.sys();
         return;
@@ -2932,7 +2930,7 @@
       var data, origin;
       origin = e.origin, data = e.data;
       if (origin === 'http://sys.4chan.org') {
-        return qr.message(data);
+        return QR.receive(data);
       }
     },
     css: '\
@@ -3096,6 +3094,6 @@
   if (d.body) {
     Main.init();
   } else {
-    $.bind(window, 'load', Main.init);
+    $.bind(document, 'DOMContentLoaded', Main.init);
   }
 }).call(this);

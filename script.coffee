@@ -363,6 +363,14 @@ else
 for key, val of conf
   conf[key] = $.get key, val
 
+pathname = location.pathname.substring(1).split('/')
+[g.BOARD, temp] = pathname
+if temp is 'res'
+  g.REPLY = temp
+  g.THREAD_ID = pathname[2]
+else
+  g.PAGENUM = parseInt(temp) or 0
+
 $$ = (selector, root=d.body) ->
   Array::slice.call root.querySelectorAll selector
 
@@ -794,13 +802,13 @@ options =
       <div class='reply dialog'>
         <div id=optionsbar>
           <div id=floaty>
-            <label for=main_tab>main</label> | <label for=flavors_tab>sauce</label> | <label for=rice_tab>rice</label> | <label for=keybinds_tab>keybinds</label>
+            <label for=main_tab>Main</label> | <label for=flavors_tab>Sauce</label> | <label for=rice_tab>Rice</label> | <label for=keybinds_tab>Keybinds</label>
           </div>
           <div id=credits>
             <a href=http://aeosynth.github.com/4chan-x/>4chan X</a> |
-            <a href=http://chat.now.im/x/aeos>support throd</a> |
-            <a href=https://github.com/aeosynth/4chan-x/issues>github</a> |
-            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>donate</a>
+            <a href=http://chat.now.im/x/aeos>Support Throd</a> |
+            <a href=https://github.com/aeosynth/4chan-x/issues>GitHub</a> |
+            <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>
           </div>
         </div>
         <hr>
@@ -927,7 +935,6 @@ options =
     $('#backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
 
 QR =
-  #TODO create new thread
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
@@ -940,7 +947,6 @@ QR =
     $.add d.body, $.el 'iframe',
       name: 'iframe'
       hidden: true
-    $.bind window, 'message', QR.receive
     # nuke id so qr's field focuses on recaptcha reload, instead of normal form's
     $('#recaptcha_response_field').id = ''
     holder = $ '#recaptcha_challenge_field_holder'
@@ -991,7 +997,7 @@ QR =
     captchas.push captcha
     $.set 'captchas', captchas
     el.value = ''
-    Recaptcha.reload()
+    QR.captchaReload()
     QR.captchaLength captchas
   captchaShift: ->
     captchas = $.get 'captchas', []
@@ -1044,7 +1050,7 @@ QR =
 
   dialog: (text='', tid) ->
     tid or= g.THREAD_ID or ''
-    QR.qr = qr = ui.dialog 'qr', top: '0', left: '0', "
+    QR.qr = qr = ui.dialog 'qr', 'top: 0; right: 0;', "
     <style>
       #qr {
         position: fixed;
@@ -1246,16 +1252,16 @@ QR =
     ta.setSelectionRange i, i
     ta.focus()
     $('[name=resto]', qr).value or= tid
-  receive: (e) ->
+  receive: (data) ->
     $('iframe[name=iframe]').src = 'about:blank'
     {qr} = QR
     row = $('#files input[form]', qr)?.parentNode
-    {data} = e
     if data
-      window.location = data if QR.op
-      return
+      if QR.op
+        window.location = data
+        return
       data = JSON.parse data
-      $.extend $('a.error', QR.qr), data
+      $.extend $('a.error', qr), data
       tc = data.textContent
       if tc is 'Error: Duplicate file entry detected.'
         $.rm row if row
@@ -1264,7 +1270,7 @@ QR =
         setTimeout QR.submit, 1000
       return
     $.rm row if row
-    if conf['Persistent QR'] or $('#files input', QR.qr)?.files.length
+    if conf['Persistent QR'] or $('#files input', qr)?.files.length
       QR.reset()
     else
       QR.close()
@@ -1285,7 +1291,7 @@ QR =
       return
     {qr} = QR
     $('.error', qr).textContent = ''
-    if (el = $('#recaptcha_response_field', qr)).value
+    if e and (el = $('#recaptcha_response_field', qr)).value
       QR.captchaPush el
     if not captcha = QR.captchaShift()
       alert 'You forgot to type in the verification.'
@@ -1321,13 +1327,12 @@ QR =
       $ = (css) -> document.querySelector css
       if node = $('table font b')?.firstChild
         {textContent, href} = node
-        alert textContent
         data = JSON.stringify {textContent, href}
       else if node = $ 'meta'
         data = node.content.match(/url=(.+)/)[1]
+        if /#/.test data then data = '' #not op
       parent.postMessage data, '*'
-      #parent will blank us on message receival;
-      #if we're not an iframe, we won't get blanked
+      #if we're an iframe, parent will blank us
 
 threading =
   init: ->
@@ -2238,15 +2243,7 @@ firstRun =
 
 Main =
   init: ->
-    $.unbind window, 'load', Main.init
-    pathname = location.pathname.substring(1).split('/')
-    [g.BOARD, temp] = pathname
-    if temp is 'res'
-      g.REPLY = temp
-      g.THREAD_ID = pathname[2]
-    else
-      g.PAGENUM = parseInt(temp) or 0
-
+    $.unbind document, 'DOMContentLoaded', Main.init
     if location.hostname is 'sys.4chan.org'
       QR.sys()
       return
@@ -2388,7 +2385,7 @@ Main =
   message: (e) ->
     {origin, data} = e
     if origin is 'http://sys.4chan.org'
-      qr.message data
+      QR.receive data
 
   css: '
       /* dialog styling */
@@ -2548,8 +2545,7 @@ Main =
       }
     '
 
-#XXX Opera will load early if script is saved w/o .user
 if d.body
   Main.init()
 else
-  $.bind window, 'load', Main.init
+  $.bind document, 'DOMContentLoaded', Main.init
