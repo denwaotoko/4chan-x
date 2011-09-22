@@ -1095,11 +1095,9 @@ QR =
         box-sizing: border-box;
         padding: 2px;
       }
-      [contenteditable]:empty:not(:focus) {
-        opacity: .7;
-      }
       [contenteditable]:empty:not(:focus)::after {
         content: attr(title);
+        color: grey;
       }
       [contenteditable]:focus, [contenteditable]:hover {
         background: #FFF;
@@ -1188,24 +1186,11 @@ QR =
       </div>
 
     </div>
-
-    <form enctype=multipart/form-data method=post action=http://sys.4chan.org/#{g.BOARD}/post target=iframe hidden>
-      <input name=mode value=regist>
-      <input name=name> <input name=email> <input name=pwd> <input name=sub>
-      <textarea name=com></textarea>
-      <input name=recaptcha_challenge_field> <input name=recaptcha_response_field>
-      <input name=resto value=#{tid} #{if g.REPLY then 'hidden' else ''}>
-    </form>
     "
-
-
-    #$.bind $('#attach', qr), 'click', QR.attach
-    #XXX use dom methods to set values instead of injecting raw user input into your html -_-;
-
     c = d.cookie
-    $('[name=name]', qr).value  = if m = c.match(/4chan_name=([^;]+)/)  then decodeURIComponent m[1] else ''
-    $('[name=email]', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
-    $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
+    $('.commentpostername', qr).textContent = if m = c.match(/4chan_name=([^;]+)/)  then decodeURIComponent m[1] else ''
+    $('.linkmail', qr).textContent = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
+    #$('[name=pwd]', qr).value = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
 
     (ta = $ '.textarea', qr).textContent = text
     $.bind ta, 'blur', -> @innerHTML = null if @innerHTML is '<br>'
