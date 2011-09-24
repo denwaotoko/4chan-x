@@ -2549,10 +2549,10 @@
     var url;
     switch (g.BOARD) {
       case 'g':
+      case 'sci':
         url = "http://archive.installgentoo.net/cgi-board.pl/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;
       case 'lit':
-      case 'sci':
       case 'tv':
         url = "http://archive.gentoomen.org/cgi-board.pl/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;

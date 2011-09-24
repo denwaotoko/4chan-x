@@ -1,5 +1,9 @@
 master
 
+2.20.2
+- mayhem
+  update /sci/ archive redirection
+
 2.20.1
 - mayhem
   fix regression: qr not preventing errors
