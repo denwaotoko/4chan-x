@@ -2548,7 +2548,9 @@
   redirect = function() {
     var url;
     switch (g.BOARD) {
+      case 'diy':
       case 'g':
+      case 'pol':
       case 'sci':
         url = "http://archive.installgentoo.net/cgi-board.pl/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;
