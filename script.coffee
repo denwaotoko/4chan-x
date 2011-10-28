@@ -221,11 +221,11 @@ $.extend $,
       textContent: "(#{code})()"
     $.add d.head, script
     $.rm script
-  ajax: (url, cb, type='get') ->
+  ajax: (url, cb, type='get', data) ->
     r = new XMLHttpRequest()
     r.onload = cb
     r.open type, url, true
-    r.send()
+    r.send data
     r
   cache: (url, cb) ->
     if req = $.cache.requests[url]
@@ -1011,6 +1011,165 @@ options =
     $.set 'backlink', @value
     conf['backlink'] = @value
     $('#backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
+
+Post =
+  init: ->
+    $.add d.body, $.el 'iframe',
+      id: 'iframe'
+      src: "http://sys.4chan.org/#{g.BOARD}/src"
+    Post.posts = []
+    Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
+    g.callbacks.push Post.node
+
+  node: (root) ->
+    link = $ '.quotejs + a', root
+    $.bind link, 'click', Post.quote
+
+  quote: (e) ->
+    e.preventDefault()
+    el = Post.el or Post.dialog()
+
+    id = @textContent
+    text = ">>#{id}\n"
+
+    #quote selected text
+    selection = getSelection()
+    root = $.x 'ancestor::td', selection.anchorNode
+    if id is $('input', root)?.name
+      if s = selection.toString().replace /\n/g, '\n>'
+        text += ">#{s}\n"
+
+    #add text to comment
+    ta = $ 'textarea', el
+    v  = ta.value
+    ss = ta.selectionStart
+    ta.value = v[0...ss] + text + v[ss..]
+    i = ss + text.length
+    ta.setSelectionRange i, i
+    ta.focus()
+
+  dialog: ->
+    el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
+    <div class=move>post</div>
+    <ul id=items></ul>
+    <textarea name=com></textarea>
+    <button>Share</button>
+    '
+    $.add el, Post.file()
+    $.bind $('button', el), 'click', Post.share
+    $.add d.body, el
+    el
+
+  pushCaptcha: ->
+    unless response = @value
+      alert 'You forgot to type in the verification.'
+      return
+    @value = ''
+
+    {captcha} = Post
+    captcha.response = response
+    Post.captchas.push captcha
+    Post.recaptchaReload()
+    Post.stats()
+
+  pushComment: ->
+    unless comment = @value
+      alert 'Error: No text entered.'
+      return
+    @value = ''
+
+    Post.comments.push comment
+    Post.stats()
+
+  pushFile: ->
+    file = @files[0]
+    if file.size > Post.MAX_FILE_SIZE
+      alert 'Error: File too large.'
+      return
+
+    parent = @parentNode
+    $.add parent, Post.file()
+    if parent.nodeName is 'LI'
+      $.rm $ 'input', parent
+    else
+      item = $.el 'li',
+        innerHTML: '<a class=close>X</a><img>'
+      $.add item, @, Post.file()
+      $.add $("#items", Post.el), item
+
+    fr = new FileReader()
+    img = $ 'img', @parent
+    fr.onload = (e) ->
+      img.src = e.target.result
+    fr.readAsDataURL file
+
+    Post.stats()
+
+  file: ->
+    input = $.el 'input',
+      type: 'file'
+      name: 'upfile'
+    $.bind input, 'change', Post.pushFile
+    input
+
+  share: ->
+    unless post = Post.posts.shift()
+      alert 'Error: No posts queued.'
+      return
+
+    alert 'past return'
+    data = to: 'sys'
+    for el in $$ '[name]', Post.el
+      data[el.name] = el.value
+    postMessage data, '*'
+
+  sys: ->
+    $.globalEval ->
+      window.addEventListener('message', (e) ->
+        {data} = e
+        return unless data.to is 'Post.message'
+        parent.postMessage data, '*'
+      , false)
+    $.bind window, 'message', (e) ->
+      {data} = e
+      {to} = data
+      return unless to is 'sys'
+      delete data.to
+      fd = new FormData()
+      for key, val of data
+        fd.append key, val
+      $.ajax '', Post.sysCallback, 'post', fd
+
+  sysCallback: ->
+    data = to: 'Post.message'
+    body = $.el 'body',
+      innerHTML: @responseText
+    if node = $('table font b', body)?.firstChild
+      data.error = node.textContent
+    postMessage data, '*'
+
+  message: (data) ->
+    {error} = data
+    if error
+      alert error
+      return
+    Post.cooldown() if conf['Cooldown']
+
+  cooldown: ->
+    {el} = Post
+    button = $ 'button', el
+    unless n = parseInt button.textContent
+      n = 1 + if Post.sage then 60 else 30
+      button.disabled = true
+
+    if --n
+      button.textContent = n
+      setTimeout Post.cooldown, 1000
+    else
+      button.disabled = false
+      button.textContent = 'Submit'
+      if Post.posts.length and $("#autopost", el).checked
+        Post.post()
 
 QR =
   #captcha caching for report form
@@ -2237,7 +2396,7 @@ Main =
   init: ->
     $.unbind document, 'DOMContentLoaded', Main.init
     if location.hostname is 'sys.4chan.org'
-      QR.sys()
+      Post.sys()
       return
     if conf['404 Redirect'] and d.title is '4chan - 404' and /^\d+$/.test g.THREAD_ID
       redirect()
@@ -2246,6 +2405,7 @@ Main =
       return
 
     $.bind window, 'message', Main.message
+    Main.globalMessage()
     Favicon.init()
     g.hiddenReplies = $.get "hiddenReplies/#{g.BOARD}/", {}
     tzOffset = (new Date()).getTimezoneOffset() / 60
@@ -2306,7 +2466,8 @@ Main =
       imgHover.init()
 
     if conf['Quick Reply']
-      QR.init()
+      Post.init()
+      #QR.init()
 
     if conf['Report Button']
       reportButton.init()
@@ -2373,10 +2534,30 @@ Main =
     unless $.get 'firstrun'
       firstRun.init()
 
+  globalMessage: ->
+    ###
+    http://code.google.com/p/chromium/issues/detail?id=20773
+    Let content scripts see other frames (instead of them being undefined)
+
+    To access the parent, we have to break out of the sandbox and evaluate
+    in the global context.
+    ###
+    $.globalEval ->
+      window.addEventListener('message', (e) ->
+        alert 'globalMessage'
+        {data} = e
+        {to} = data
+        delete to
+        if to is 'sys'
+          d.getElementById('iframe').contentWindow.postMessage data
+      , false)
+
   message: (e) ->
-    {origin, data} = e
-    if origin is 'http://sys.4chan.org'
-      QR.receive data
+    {data} = e
+    {to} = data
+    switch to
+      when 'Post.message'
+        Post.message data
 
   node: (e) ->
     {target} = e
@@ -2645,6 +2826,10 @@ Main =
         opacity: 0;
         position: absolute;
         left: 0;
+      }
+
+      #post {
+        position: fixed;
       }
     '
 

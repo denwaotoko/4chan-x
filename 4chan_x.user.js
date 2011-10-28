@@ -61,7 +61,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, pathname, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, temp, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, pathname, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, temp, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
   config = {
     main: {
@@ -310,7 +310,7 @@
       $.add(d.head, script);
       return $.rm(script);
     },
-    ajax: function(url, cb, type) {
+    ajax: function(url, cb, type, data) {
       var r;
       if (type == null) {
         type = 'get';
@@ -318,7 +318,7 @@
       r = new XMLHttpRequest();
       r.onload = cb;
       r.open(type, url, true);
-      r.send();
+      r.send(data);
       return r;
     },
     cache: function(url, cb) {
@@ -1381,6 +1381,201 @@
       $.set('backlink', this.value);
       conf['backlink'] = this.value;
       return $('#backlinkPreview').textContent = conf['backlink'].replace(/%id/, '123456789');
+    }
+  };
+  Post = {
+    init: function() {
+      $.add(d.body, $.el('iframe', {
+        id: 'iframe',
+        src: "http://sys.4chan.org/" + g.BOARD + "/src"
+      }));
+      Post.posts = [];
+      Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
+      return g.callbacks.push(Post.node);
+    },
+    node: function(root) {
+      var link;
+      link = $('.quotejs + a', root);
+      return $.bind(link, 'click', Post.quote);
+    },
+    quote: function(e) {
+      var el, i, id, root, s, selection, ss, ta, text, v, _ref;
+      e.preventDefault();
+      el = Post.el || Post.dialog();
+      id = this.textContent;
+      text = ">>" + id + "\n";
+      selection = getSelection();
+      root = $.x('ancestor::td', selection.anchorNode);
+      if (id === ((_ref = $('input', root)) != null ? _ref.name : void 0)) {
+        if (s = selection.toString().replace(/\n/g, '\n>')) {
+          text += ">" + s + "\n";
+        }
+      }
+      ta = $('textarea', el);
+      v = ta.value;
+      ss = ta.selectionStart;
+      ta.value = v.slice(0, ss) + text + v.slice(ss);
+      i = ss + text.length;
+      ta.setSelectionRange(i, i);
+      return ta.focus();
+    },
+    dialog: function() {
+      var el;
+      el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
+    <div class=move>post</div>\
+    <ul id=items></ul>\
+    <textarea name=com></textarea>\
+    <button>Share</button>\
+    ');
+      $.add(el, Post.file());
+      $.bind($('button', el), 'click', Post.share);
+      $.add(d.body, el);
+      return el;
+    },
+    pushCaptcha: function() {
+      var captcha, response;
+      if (!(response = this.value)) {
+        alert('You forgot to type in the verification.');
+        return;
+      }
+      this.value = '';
+      captcha = Post.captcha;
+      captcha.response = response;
+      Post.captchas.push(captcha);
+      Post.recaptchaReload();
+      return Post.stats();
+    },
+    pushComment: function() {
+      var comment;
+      if (!(comment = this.value)) {
+        alert('Error: No text entered.');
+        return;
+      }
+      this.value = '';
+      Post.comments.push(comment);
+      return Post.stats();
+    },
+    pushFile: function() {
+      var file, fr, img, item, parent;
+      file = this.files[0];
+      if (file.size > Post.MAX_FILE_SIZE) {
+        alert('Error: File too large.');
+        return;
+      }
+      parent = this.parentNode;
+      $.add(parent, Post.file());
+      if (parent.nodeName === 'LI') {
+        $.rm($('input', parent));
+      } else {
+        item = $.el('li', {
+          innerHTML: '<a class=close>X</a><img>'
+        });
+        $.add(item, this, Post.file());
+        $.add($("#items", Post.el), item);
+      }
+      fr = new FileReader();
+      img = $('img', this.parent);
+      fr.onload = function(e) {
+        return img.src = e.target.result;
+      };
+      fr.readAsDataURL(file);
+      return Post.stats();
+    },
+    file: function() {
+      var input;
+      input = $.el('input', {
+        type: 'file',
+        name: 'upfile'
+      });
+      $.bind(input, 'change', Post.pushFile);
+      return input;
+    },
+    share: function() {
+      var data, el, post, _i, _len, _ref;
+      if (!(post = Post.posts.shift())) {
+        alert('Error: No posts queued.');
+        return;
+      }
+      alert('past return');
+      data = {
+        to: 'sys'
+      };
+      _ref = $$('[name]', Post.el);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        el = _ref[_i];
+        data[el.name] = el.value;
+      }
+      return postMessage(data, '*');
+    },
+    sys: function() {
+      $.globalEval(function() {
+        return window.addEventListener('message', function(e) {
+          var data;
+          data = e.data;
+          if (data.to !== 'Post.message') {
+            return;
+          }
+          return parent.postMessage(data, '*');
+        }, false);
+      });
+      return $.bind(window, 'message', function(e) {
+        var data, fd, key, to, val;
+        data = e.data;
+        to = data.to;
+        if (to !== 'sys') {
+          return;
+        }
+        delete data.to;
+        fd = new FormData();
+        for (key in data) {
+          val = data[key];
+          fd.append(key, val);
+        }
+        return $.ajax('', Post.sysCallback, 'post', fd);
+      });
+    },
+    sysCallback: function() {
+      var body, data, node, _ref;
+      data = {
+        to: 'Post.message'
+      };
+      body = $.el('body', {
+        innerHTML: this.responseText
+      });
+      if (node = (_ref = $('table font b', body)) != null ? _ref.firstChild : void 0) {
+        data.error = node.textContent;
+      }
+      return postMessage(data, '*');
+    },
+    message: function(data) {
+      var error;
+      error = data.error;
+      if (error) {
+        alert(error);
+        return;
+      }
+      if (conf['Cooldown']) {
+        return Post.cooldown();
+      }
+    },
+    cooldown: function() {
+      var button, el, n;
+      el = Post.el;
+      button = $('button', el);
+      if (!(n = parseInt(button.textContent))) {
+        n = 1 + (Post.sage ? 60 : 30);
+        button.disabled = true;
+      }
+      if (--n) {
+        button.textContent = n;
+        return setTimeout(Post.cooldown, 1000);
+      } else {
+        button.disabled = false;
+        button.textContent = 'Submit';
+        if (Post.posts.length && $("#autopost", el).checked) {
+          return Post.post();
+        }
+      }
     }
   };
   QR = {
@@ -2965,7 +3160,7 @@
       var cutoff, hiddenThreads, id, lastChecked, nodes, now, timestamp, tzOffset, _ref;
       $.unbind(document, 'DOMContentLoaded', Main.init);
       if (location.hostname === 'sys.4chan.org') {
-        QR.sys();
+        Post.sys();
         return;
       }
       if (conf['404 Redirect'] && d.title === '4chan - 404' && /^\d+$/.test(g.THREAD_ID)) {
@@ -2976,6 +3171,7 @@
         return;
       }
       $.bind(window, 'message', Main.message);
+      Main.globalMessage();
       Favicon.init();
       g.hiddenReplies = $.get("hiddenReplies/" + g.BOARD + "/", {});
       tzOffset = (new Date()).getTimezoneOffset() / 60;
@@ -3035,7 +3231,7 @@
         imgHover.init();
       }
       if (conf['Quick Reply']) {
-        QR.init();
+        Post.init();
       }
       if (conf['Report Button']) {
         reportButton.init();
@@ -3105,11 +3301,33 @@
         return firstRun.init();
       }
     },
+    globalMessage: function() {
+      /*
+          http://code.google.com/p/chromium/issues/detail?id=20773
+          Let content scripts see other frames (instead of them being undefined)
+      
+          To access the parent, we have to break out of the sandbox and evaluate
+          in the global context.
+          */      return $.globalEval(function() {
+        return window.addEventListener('message', function(e) {
+          var data, to;
+          alert('globalMessage');
+          data = e.data;
+          to = data.to;
+          delete to;
+          if (to === 'sys') {
+            return d.getElementById('iframe').contentWindow.postMessage(data);
+          }
+        }, false);
+      });
+    },
     message: function(e) {
-      var data, origin;
-      origin = e.origin, data = e.data;
-      if (origin === 'http://sys.4chan.org') {
-        return QR.receive(data);
+      var data, to;
+      data = e.data;
+      to = data.to;
+      switch (to) {
+        case 'Post.message':
+          return Post.message(data);
       }
     },
     node: function(e) {
@@ -3384,6 +3602,10 @@
         opacity: 0;\
         position: absolute;\
         left: 0;\
+      }\
+\
+      #post {\
+        position: fixed;\
       }\
     '
   };
