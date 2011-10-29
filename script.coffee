@@ -94,7 +94,7 @@ if console?
 # XXX opera cannot into Object.keys
 if not Object.keys
   Object.keys = (o) ->
-    key for key in o
+    key for key of o
 
 # flatten the config
 conf = {}
