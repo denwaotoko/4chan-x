@@ -1112,15 +1112,26 @@ Post =
     $.bind input, 'change', Post.pushFile
     input
 
+  getPost: ->
+    {el} = Post
+    unless Post.captchas.length
+      return error: 'You forgot to type in the verification.'
+    unless Post.comments.length or $('#items input', el)?.files.length
+      return error: 'Error: No text entered.'
+
+    return {
+      captcha: Post.captchas.shift()
+      com: Post.comments.shift()
+      upfile: $ '#items input', el
+    }
+
   share: ->
-    unless post = Post.posts.shift()
-      alert 'Error: No posts queued.'
+    {error} = post = Post.getPost()
+    if error
+      alert error
       return
 
-    alert 'past return'
-    data = to: 'sys'
-    for el in $$ '[name]', Post.el
-      data[el.name] = el.value
+    post.to = 'sys'
     postMessage data, '*'
 
   sys: ->

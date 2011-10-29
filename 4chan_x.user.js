@@ -1490,21 +1490,33 @@
       $.bind(input, 'change', Post.pushFile);
       return input;
     },
+    getPost: function() {
+      var el, _ref;
+      el = Post.el;
+      if (!Post.captchas.length) {
+        return {
+          error: 'You forgot to type in the verification.'
+        };
+      }
+      if (!(Post.comments.length || ((_ref = $('#items input', el)) != null ? _ref.files.length : void 0))) {
+        return {
+          error: 'Error: No text entered.'
+        };
+      }
+      return {
+        captcha: Post.captchas.shift(),
+        com: Post.comments.shift(),
+        upfile: $('#items input', el)
+      };
+    },
     share: function() {
-      var data, el, post, _i, _len, _ref;
-      if (!(post = Post.posts.shift())) {
-        alert('Error: No posts queued.');
+      var error, post;
+      error = (post = Post.getPost()).error;
+      if (error) {
+        alert(error);
         return;
       }
-      alert('past return');
-      data = {
-        to: 'sys'
-      };
-      _ref = $$('[name]', Post.el);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        el = _ref[_i];
-        data[el.name] = el.value;
-      }
+      post.to = 'sys';
       return postMessage(data, '*');
     },
     sys: function() {
