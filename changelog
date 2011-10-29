@@ -2,7 +2,10 @@ master
 
 2.20.2
 - mayhem
-  update /sci/ archive redirection
+  update archive redirection
+- aeosynth
+  hopefully fix qr error / update messages
+  rm support throd link
 
 2.20.1
 - mayhem
