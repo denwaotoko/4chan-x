@@ -189,7 +189,7 @@
     }
   })(null, config);
   NAMESPACE = 'AEOS.4chan_x.';
-  VERSION = '2.20.1';
+  VERSION = '2.20.2';
   SECOND = 1000;
   MINUTE = 60 * SECOND;
   HOUR = 60 * MINUTE;
@@ -3006,7 +3006,7 @@
         case 'qr.message':
           return qr.message(data);
         case 'update':
-          if (confirm('An updated version of 4chan X is available, would you like to install it now?')) {
+          if ((data.version !== VERSION) && confirm('An updated version of 4chan X is available, would you like to install it now?')) {
             return window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js';
           }
       }
