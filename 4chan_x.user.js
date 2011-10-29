@@ -1364,20 +1364,19 @@
       $.bind($('#dummy', qr.el), 'keydown', qr.captchaKeydown);
       return $.add(d.body, qr.el);
     },
-    message: function(e) {
-      var data, duration, fileCount;
+    message: function(data) {
+      var duration, fileCount, tc;
       $('iframe[name=iframe]').src = 'about:blank';
       fileCount = $('#files', qr.el).childElementCount;
-      data = e.data;
-      if (data) {
-        data = JSON.parse(data);
+      tc = data.textContent;
+      if (tc) {
         $.extend($('#error', qr.el), data);
         $('#recaptcha_response_field', qr.el).value = '';
         $('#autohide', qr.el).checked = false;
-        if (data.textContent === 'You seem to have mistyped the verification.') {
+        if (tc === 'You seem to have mistyped the verification.') {
           setTimeout(qr.autoPost, 1000);
-        } else if (data.textContent === 'Error: Duplicate file entry detected.' && fileCount) {
-          $('textarea', qr.el).value += '\n' + data.textContent + ' ' + data.href;
+        } else if (tc === 'Error: Duplicate file entry detected.' && fileCount) {
+          $('textarea', qr.el).value += '\n' + tc + ' ' + data.href;
           qr.attachNext();
           setTimeout(qr.autoPost, 1000);
         }
@@ -1528,15 +1527,13 @@
             in the global context.
           */
       $.globalEval(function() {
-        var data, href, node, textContent, _ref;
+        var data, node, _ref;
+        data = {
+          to: 'qr.message'
+        };
         if (node = (_ref = document.querySelector('table font b')) != null ? _ref.firstChild : void 0) {
-          textContent = node.textContent, href = node.href;
-          data = JSON.stringify({
-            textContent: textContent,
-            href: href
-          });
-        } else {
-          data = '';
+          data.textContent = node.textContent;
+          data.href = node.href;
         }
         return parent.postMessage(data, '*');
       });
@@ -3002,12 +2999,17 @@
       }
     },
     message: function(e) {
-      var data, origin;
-      origin = e.origin, data = e.data;
-      if (origin === 'http://sys.4chan.org') {
-        return qr.message(e);
-      } else if (data !== VERSION && confirm('An updated version of 4chan X is available, would you like to install it now?')) {
-        return window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js';
+      var data, to;
+      data = e.data;
+      to = data.to;
+      delete data.to;
+      switch (to) {
+        case 'qr.message':
+          return qr.message(data);
+        case 'update':
+          if (confirm('An updated version of 4chan X is available, would you like to install it now?')) {
+            return window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js';
+          }
       }
     },
     css: '\

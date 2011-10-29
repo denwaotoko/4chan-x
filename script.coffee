@@ -1080,20 +1080,19 @@ qr =
 
     $.add d.body, qr.el
 
-  message: (e) ->
+  message: (data) ->
     $('iframe[name=iframe]').src = 'about:blank'
     fileCount = $('#files', qr.el).childElementCount
 
-    {data} = e
-    if data # error message
-      data = JSON.parse data
+    tc = data.textContent
+    if tc # error message
       $.extend $('#error', qr.el), data
       $('#recaptcha_response_field', qr.el).value = ''
       $('#autohide', qr.el).checked = false
-      if data.textContent is 'You seem to have mistyped the verification.'
+      if tc is 'You seem to have mistyped the verification.'
         setTimeout qr.autoPost, 1000
-      else if data.textContent is 'Error: Duplicate file entry detected.' and fileCount
-        $('textarea', qr.el).value += '\n' + data.textContent + ' ' + data.href
+      else if tc is 'Error: Duplicate file entry detected.' and fileCount
+        $('textarea', qr.el).value += '\n' + tc + ' ' + data.href
         qr.attachNext()
         setTimeout qr.autoPost, 1000
       return
@@ -1215,11 +1214,10 @@ qr =
       in the global context.
     ###
     $.globalEval ->
+      data = to: 'qr.message'
       if node = document.querySelector('table font b')?.firstChild
-        {textContent, href} = node
-        data = JSON.stringify {textContent, href}
-      else
-        data = ''
+        data.textContent = node.textContent
+        data.href = node.href
       parent.postMessage data, '*'
 
     c = $('b')?.lastChild
@@ -2349,11 +2347,15 @@ Main =
       firstRun.init()
 
   message: (e) ->
-    {origin, data} = e
-    if origin is 'http://sys.4chan.org'
-      qr.message e
-    else if data isnt VERSION and confirm 'An updated version of 4chan X is available, would you like to install it now?'
-      window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js'
+    {data} = e
+    {to} = data
+    delete data.to
+    switch to
+      when 'qr.message'
+        qr.message data
+      when 'update'
+        if confirm 'An updated version of 4chan X is available, would you like to install it now?'
+          window.location = 'https://raw.github.com/aeosynth/4chan-x/stable/4chan_x.user.js'
 
   css: '
       /* dialog styling */
