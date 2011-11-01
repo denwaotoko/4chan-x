@@ -1024,6 +1024,9 @@ Post =
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
+    if conf['Persistent QR']
+      Post.dialog()
+
   node: (root) ->
     link = $ '.quotejs + a', root
     $.bind link, 'click', Post.quote

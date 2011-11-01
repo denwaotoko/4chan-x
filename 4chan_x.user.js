@@ -1392,7 +1392,10 @@
       }));
       Post.posts = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
-      return g.callbacks.push(Post.node);
+      g.callbacks.push(Post.node);
+      if (conf['Persistent QR']) {
+        return Post.dialog();
+      }
     },
     node: function(root) {
       var link;
