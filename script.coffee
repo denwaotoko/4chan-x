@@ -1022,6 +1022,9 @@ Post =
       src: "http://sys.4chan.org/#{g.BOARD}/src"
     Post.comments = []
     Post.captchas = []
+    Post.captcha =
+      time: Date.now()
+      challenge: $('#recaptcha_challenge_field').value
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
@@ -1056,7 +1059,16 @@ Post =
     ta.focus()
 
   stats: ->
-    $('#stats', Post.el).textContent = "comments: #{Post.comments.length}"
+    $('#stats', Post.el).textContent = "comments: #{Post.comments.length}, captchas: #{Post.captchas.length}"
+
+  captchaKeydown: (e) ->
+    kc = e.keyCode
+    v = @value
+    if kc is 8 and not v #backspace, empty
+      Post.captchaReload()
+      return
+    if e.keyCode is 13
+      Post.pushCaptcha.call @
 
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
@@ -1064,15 +1076,20 @@ Post =
     <div id=stats></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
+    <div><input id=captcha placeholder=Verification></div>
     <button id=queue>Queue</button>
     <button id=share>Share</button>
     '
     $.add el, Post.file()
     $.bind $('#share', el), 'click', Post.share
     $.bind $('#queue', el), 'click', Post.pushComment
+    $.bind $('#captcha', el), 'keydown', Post.captchaKeydown
     Post.stats()
     $.add d.body, el
     el
+
+  captchaReload: ->
+    window.location = 'javascript:Recaptcha.reload()'
 
   pushCaptcha: ->
     unless response = @value
@@ -1083,7 +1100,7 @@ Post =
     {captcha} = Post
     captcha.response = response
     Post.captchas.push captcha
-    Post.recaptchaReload()
+    Post.captchaReload()
     Post.stats()
 
   pushComment: ->

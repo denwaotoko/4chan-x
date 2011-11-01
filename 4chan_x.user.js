@@ -1392,6 +1392,10 @@
       }));
       Post.comments = [];
       Post.captchas = [];
+      Post.captcha = {
+        time: Date.now(),
+        challenge: $('#recaptcha_challenge_field').value
+      };
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
       if (conf['Persistent QR']) {
@@ -1425,7 +1429,19 @@
       return ta.focus();
     },
     stats: function() {
-      return $('#stats', Post.el).textContent = "comments: " + Post.comments.length;
+      return $('#stats', Post.el).textContent = "comments: " + Post.comments.length + ", captchas: " + Post.captchas.length;
+    },
+    captchaKeydown: function(e) {
+      var kc, v;
+      kc = e.keyCode;
+      v = this.value;
+      if (kc === 8 && !v) {
+        Post.captchaReload();
+        return;
+      }
+      if (e.keyCode === 13) {
+        return Post.pushCaptcha.call(this);
+      }
     },
     dialog: function() {
       var el;
@@ -1434,15 +1450,20 @@
     <div id=stats></div>\
     <ul id=items></ul>\
     <textarea name=com></textarea>\
+    <div><input id=captcha placeholder=Verification></div>\
     <button id=queue>Queue</button>\
     <button id=share>Share</button>\
     ');
       $.add(el, Post.file());
       $.bind($('#share', el), 'click', Post.share);
       $.bind($('#queue', el), 'click', Post.pushComment);
+      $.bind($('#captcha', el), 'keydown', Post.captchaKeydown);
       Post.stats();
       $.add(d.body, el);
       return el;
+    },
+    captchaReload: function() {
+      return window.location = 'javascript:Recaptcha.reload()';
     },
     pushCaptcha: function() {
       var captcha, response;
@@ -1454,7 +1475,7 @@
       captcha = Post.captcha;
       captcha.response = response;
       Post.captchas.push(captcha);
-      Post.recaptchaReload();
+      Post.captchaReload();
       return Post.stats();
     },
     pushComment: function() {
