@@ -102,7 +102,7 @@ if console?
 # XXX opera cannot into Object.keys
 if not Object.keys
   Object.keys = (o) ->
-    key for key in o
+    key for key of o
 
 # flatten the config
 conf = {}
@@ -134,7 +134,7 @@ ui =
     el.innerHTML = html
     el.id = id
     el.style.cssText = if saved = localStorage["#{NAMESPACE}#{id}.position"] then saved else position
-    el.querySelector('div.move').addEventListener 'mousedown', ui.dragstart, false
+    el.querySelector('div.move')?.addEventListener 'mousedown', ui.dragstart, false
     el
   dragstart: (e) ->
     #prevent text selection
@@ -152,13 +152,17 @@ ui =
     ui.height = d.body.clientHeight - el.offsetHeight
   drag: (e) ->
     left = e.clientX - ui.dx
-    if left < 10 then left = '0'
-    else if ui.width - left < 10 then left = null
-    right = if left then null else 0
     top = e.clientY - ui.dy
-    if top < 10 then top = '0'
-    else if ui.height - top < 10 then top = null
-    bottom = if top then null else 0
+    left =
+      if left < 10 then 0
+      else if ui.width - left < 10 then null
+      else left
+    top =
+      if top < 10 then 0
+      else if ui.height - top < 10 then null
+      else top
+    right = if left is null then 0 else null
+    bottom = if top is null then 0 else null
     #using null instead of '' is 4% faster
     #these 4 statements are 40% faster than 1 style.cssText
     {style} = ui.el
@@ -197,7 +201,7 @@ ui =
       style.left  = null
       style.right = clientWidth - clientX + 45
 
-  hoverend: (e) ->
+  hoverend: ->
     ui.el.parentNode.removeChild ui.el
 
 ###
@@ -370,14 +374,6 @@ else
 for key, val of conf
   conf[key] = $.get key, val
 
-pathname = location.pathname.substring(1).split('/')
-[g.BOARD, temp] = pathname
-if temp is 'res'
-  g.REPLY = temp
-  g.THREAD_ID = pathname[2]
-else
-  g.PAGENUM = parseInt(temp) or 0
-
 $$ = (selector, root=d.body) ->
   Array::slice.call root.querySelectorAll selector
 
@@ -428,6 +424,15 @@ filter =
   md5: (root) ->
     if img = $ 'img[md5]', root
       filter.test 'md5', img.getAttribute('md5')
+
+strikethroughQuotes =
+  init: ->
+    g.callbacks.push (root) ->
+      return if root.className is 'inline'
+      for quote in $$ '.quotelink', root
+        if el = $.id quote.hash[1..]
+          if el.parentNode.parentNode.parentNode.hidden
+            $.addClass quote, 'filtered'
 
 expandComment =
   init: ->
@@ -480,7 +485,7 @@ expandThread =
       $.replace span, a
 
   cb:
-    toggle: (e) ->
+    toggle: ->
       thread = @parentNode
       expandThread.toggle thread
 
@@ -560,11 +565,11 @@ replyHiding =
         replyHiding.hide reply
 
   cb:
-    hide: (e) ->
+    hide: ->
       reply = @parentNode.nextSibling
       replyHiding.hide reply
 
-    show: (e) ->
+    show: ->
       div = @parentNode
       table = div.nextSibling
       replyHiding.show table
@@ -575,6 +580,9 @@ replyHiding =
     replyHiding.hideHide reply
 
     id = reply.id
+    for quote in $$ ".quotelink[href='##{id}'], .backlink[href='##{id}']"
+      $.addClass quote, 'filtered'
+
     g.hiddenReplies[id] = Date.now()
     $.set "hiddenReplies/#{g.BOARD}/", g.hiddenReplies
 
@@ -598,6 +606,9 @@ replyHiding =
     table.hidden = false
 
     id = $('td[id]', table).id
+    for quote in $$ ".quotelink[href='##{id}'], .backlink[href='##{id}']"
+      $.removeClass quote, 'filtered'
+
     delete g.hiddenReplies[id]
     $.set "hiddenReplies/#{g.BOARD}/", g.hiddenReplies
 
@@ -854,84 +865,82 @@ options =
     $.replace home, a
 
   dialog: ->
-    dialog = $.el 'div', id: 'options', innerHTML: '
-<div class="reply dialog">
-  <div id=optionsbar>
-    <div id=credits>
-      <a href=http://aeosynth.github.com/4chan-x/>4chan X</a>
-      | <a href=https://github.com/aeosynth/4chan-x/issues>GitHub</a>
-      | <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>
-    </div>
-    <div>
-      <label for=main_tab>Main</label>
-      | <label for=filter_tab>Filter</label>
-      | <label for=flavors_tab>Sauce</label>
-      | <label for=rice_tab>Rice</label>
-      | <label for=keybinds_tab>Keybinds</label>
-    </div>
+    dialog = ui.dialog 'options', '', '
+<div id=optionsbar>
+  <div id=credits>
+    <a target=_blank href=http://aeosynth.github.com/4chan-x/>4chan X</a>
+    | <a target=_blank href=https://github.com/aeosynth/4chan-x/issues>Issues</a>
+    | <a target=_blank href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>
   </div>
-  <hr>
-  <div id=content>
-    <input type=radio name=tab hidden id=main_tab checked>
-    <div id=main></div>
-    <input type=radio name=tab hidden id=flavors_tab>
-    <textarea name=flavors id=flavors></textarea>
-    <input type=radio name=tab hidden id=filter_tab>
-    <div id=filter>
-      Use <a href=https://developer.mozilla.org/en/JavaScript/Guide/Regular_Expressions>regular expressions</a>, one per line.<br>
-      For example, <code>/weeaboo/i</code> will filter posts containing `weeaboo` case-insensitive.
-      <p>Name:<br><textarea name=name></textarea></p>
-      <p>Tripcode:<br><textarea name=trip></textarea></p>
-      <p>E-mail:<br><textarea name=mail></textarea></p>
-      <p>Subject:<br><textarea name=sub></textarea></p>
-      <p>Comment:<br><textarea name=com></textarea></p>
-      <p>Filename:<br><textarea name=file></textarea></p>
-      <p>Image MD5:<br><textarea name=md5></textarea></p>
-    </div>
-    <input type=radio name=tab hidden id=rice_tab>
-    <div id=rice>
-      <ul>
-        Backlink formatting
-        <li><input type=text name=backlink> : <span id=backlinkPreview></span></li>
-      </ul>
-      <ul>
-        Time formatting
-        <li><input type=text name=time> : <span id=timePreview></span></li>
-        <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>
-        <li>Day: %a, %A, %d, %e</li>
-        <li>Month: %m, %b, %B</li>
-        <li>Year: %y</li>
-        <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>
-        <li>Minutes: %M</li>
-      </ul>
-    </div>
-    <input type=radio name=tab hidden id=keybinds_tab>
-    <div id=keybinds>
-      <table><tbody>
-        <tr><th>Actions</th><th>Keybinds</th></tr>
-        <tr><td>Close Options or QR</td><td><input name=close></td></tr>
-        <tr><td>Quick spoiler</td><td><input name=spoiler></td></tr>
-        <tr><td>Open QR with post number inserted</td><td><input name=openQR></td></tr>
-        <tr><td>Open QR without post number inserted</td><td><input name=openEmptyQR></td></tr>
-        <tr><td>Submit post</td><td><input name=submit></td></tr>
-        <tr><td>Select next reply</td><td><input name=nextReply ></td></tr>
-        <tr><td>Select previous reply</td><td><input name=previousReply></td></tr>
-        <tr><td>See next thread</td><td><input name=nextThread></td></tr>
-        <tr><td>See previous thread</td><td><input name=previousThread></td></tr>
-        <tr><td>Jump to the next page</td><td><input name=nextPage></td></tr>
-        <tr><td>Jump to the previous page</td><td><input name=previousPage></td></tr>
-        <tr><td>Jump to page 0</td><td><input name=zero></td></tr>
-        <tr><td>Open thread in current tab</td><td><input name=openThread></td></tr>
-        <tr><td>Open thread in new tab</td><td><input name=openThreadTab></td></tr>
-        <tr><td>Expand thread</td><td><input name=expandThread></td></tr>
-        <tr><td>Watch thread</td><td><input name=watch></td></tr>
-        <tr><td>Hide thread</td><td><input name=hide></td></tr>
-        <tr><td>Expand selected image</td><td><input name=expandImages></td></tr>
-        <tr><td>Expand all images</td><td><input name=expandAllImages></td></tr>
-        <tr><td>Update now</td><td><input name=update></td></tr>
-        <tr><td>Reset the unread count to 0</td><td><input name=unreadCountTo0></td></tr>
-      </tbody></table>
-    </div>
+  <div>
+    <label for=main_tab>Main</label>
+    | <label for=filter_tab>Filter</label>
+    | <label for=flavors_tab>Sauce</label>
+    | <label for=rice_tab>Rice</label>
+    | <label for=keybinds_tab>Keybinds</label>
+  </div>
+</div>
+<hr>
+<div id=content>
+  <input type=radio name=tab hidden id=main_tab checked>
+  <div id=main></div>
+  <input type=radio name=tab hidden id=flavors_tab>
+  <textarea name=flavors id=flavors></textarea>
+  <input type=radio name=tab hidden id=filter_tab>
+  <div id=filter>
+    Use <a href=https://developer.mozilla.org/en/JavaScript/Guide/Regular_Expressions>regular expressions</a>, one per line.<br>
+    For example, <code>/weeaboo/i</code> will filter posts containing `weeaboo` case-insensitive.
+    <p>Name:<br><textarea name=name></textarea></p>
+    <p>Tripcode:<br><textarea name=trip></textarea></p>
+    <p>E-mail:<br><textarea name=mail></textarea></p>
+    <p>Subject:<br><textarea name=sub></textarea></p>
+    <p>Comment:<br><textarea name=com></textarea></p>
+    <p>Filename:<br><textarea name=file></textarea></p>
+    <p>Image MD5:<br><textarea name=md5></textarea></p>
+  </div>
+  <input type=radio name=tab hidden id=rice_tab>
+  <div id=rice>
+    <ul>
+      Backlink formatting
+      <li><input type=text name=backlink> : <span id=backlinkPreview></span></li>
+    </ul>
+    <ul>
+      Time formatting
+      <li><input type=text name=time> : <span id=timePreview></span></li>
+      <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>
+      <li>Day: %a, %A, %d, %e</li>
+      <li>Month: %m, %b, %B</li>
+      <li>Year: %y</li>
+      <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>
+      <li>Minutes: %M</li>
+    </ul>
+  </div>
+  <input type=radio name=tab hidden id=keybinds_tab>
+  <div id=keybinds>
+    <table><tbody>
+      <tr><th>Actions</th><th>Keybinds</th></tr>
+      <tr><td>Close Options or QR</td><td><input name=close></td></tr>
+      <tr><td>Quick spoiler</td><td><input name=spoiler></td></tr>
+      <tr><td>Open QR with post number inserted</td><td><input name=openQR></td></tr>
+      <tr><td>Open QR without post number inserted</td><td><input name=openEmptyQR></td></tr>
+      <tr><td>Submit post</td><td><input name=submit></td></tr>
+      <tr><td>Select next reply</td><td><input name=nextReply ></td></tr>
+      <tr><td>Select previous reply</td><td><input name=previousReply></td></tr>
+      <tr><td>See next thread</td><td><input name=nextThread></td></tr>
+      <tr><td>See previous thread</td><td><input name=previousThread></td></tr>
+      <tr><td>Jump to the next page</td><td><input name=nextPage></td></tr>
+      <tr><td>Jump to the previous page</td><td><input name=previousPage></td></tr>
+      <tr><td>Jump to page 0</td><td><input name=zero></td></tr>
+      <tr><td>Open thread in current tab</td><td><input name=openThread></td></tr>
+      <tr><td>Open thread in new tab</td><td><input name=openThreadTab></td></tr>
+      <tr><td>Expand thread</td><td><input name=expandThread></td></tr>
+      <tr><td>Watch thread</td><td><input name=watch></td></tr>
+      <tr><td>Hide thread</td><td><input name=hide></td></tr>
+      <tr><td>Expand selected image</td><td><input name=expandImages></td></tr>
+      <tr><td>Expand all images</td><td><input name=expandAllImages></td></tr>
+      <tr><td>Update now</td><td><input name=update></td></tr>
+      <tr><td>Reset the unread count to 0</td><td><input name=unreadCountTo0></td></tr>
+    </tbody></table>
   </div>
 </div>'
 
@@ -972,22 +981,16 @@ options =
       input.value = conf[input.name]
       $.bind input, 'keydown', options.keybind
 
-    ###
-    Two parent divs are necessary to center on all browsers.
-
-    Only one when Firefox and Opera will support flexboxes correctly.
-    https://bugzilla.mozilla.org/show_bug.cgi?id=579776
-    ###
     overlay = $.el 'div', id: 'overlay'
     $.bind overlay, 'click', -> $.rm overlay
-    $.bind dialog.firstElementChild, 'click', (e) -> e.stopPropagation()
+    $.bind dialog, 'click', (e) -> e.stopPropagation()
     $.add overlay, dialog
     $.add d.body, overlay
 
     options.time.call     time
     options.backlink.call back
 
-  clearHidden: (e) ->
+  clearHidden: ->
     #'hidden' might be misleading; it's the number of IDs we're *looking* for,
     # not the number of posts actually hidden on the page.
     $.delete "hiddenReplies/#{g.BOARD}/"
@@ -1001,13 +1004,13 @@ options =
     @value = key
     $.set @name, key
     conf[@name] = key
-  time: (e) ->
+  time: ->
     $.set 'time', @value
     conf['time'] = @value
     Time.foo()
     Time.date = new Date()
     $('#timePreview').textContent = Time.funk Time
-  backlink: (e) ->
+  backlink: ->
     $.set 'backlink', @value
     conf['backlink'] = @value
     $('#backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
@@ -1462,6 +1465,7 @@ QR =
       if $('img.favicon', op).src is Favicon.empty
         watcher.watch op, id
   sys: ->
+    $.unbind d, 'DOMContentLoaded', QR.sys
     if recaptcha = $ '#recaptcha_response_field' #post reporting
       $.bind recaptcha, 'keydown', QR.keydown
       return
@@ -1519,7 +1523,7 @@ threading =
 threadHiding =
   init: ->
     hiddenThreads = $.get "hiddenThreads/#{g.BOARD}/", {}
-    for thread in $$ 'div.thread'
+    for thread in $$ '.thread'
       op = thread.firstChild
       a = $.el 'a',
         textContent: '[ - ]'
@@ -1530,10 +1534,10 @@ threadHiding =
         threadHiding.hideHide thread
 
   cb:
-    hide: (e) ->
+    hide: ->
       thread = @parentNode.parentNode
       threadHiding.hide thread
-    show: (e) ->
+    show: ->
       thread = @parentNode.parentNode
       threadHiding.show thread
 
@@ -1591,6 +1595,8 @@ threadHiding =
 
 updater =
   init: ->
+    #thread closed
+    return unless $ 'form[name=post]'
     if conf['Scrolling']
       if conf['Scroll BG']
         updater.focus = true
@@ -1759,9 +1765,9 @@ watcher =
         favicon.src = Favicon.empty
 
   cb:
-    toggle: (e) ->
+    toggle: ->
       watcher.toggle @parentNode
-    x: (e) ->
+    x: ->
       [board, _, id] = @nextElementSibling
         .getAttribute('href').substring(1).split('/')
       watcher.unwatch board, id
@@ -1829,16 +1835,21 @@ Time =
   init: ->
     Time.foo()
 
+    # GMT -8 is given as +480; would GMT +8 be -480 ?
+    chanOffset = 5 - new Date().getTimezoneOffset() / 60
+    # 4chan = EST = GMT -5
+    chanOffset-- if $.isDST()
+
     @parse =
       if Date.parse '10/11/11(Tue)18:53'
-        (node) -> new Date Date.parse(node.textContent) + g.chanOffset*HOUR
+        (node) -> new Date Date.parse(node.textContent) + chanOffset*HOUR
       else # Firefox the Archaic cannot parse 4chan's time
         (node) ->
           [_, month, day, year, hour, min] =
             node.textContent.match /(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/
           year = "20#{year}"
           month -= 1 #months start at 0
-          hour = g.chanOffset + Number hour
+          hour = chanOffset + Number hour
           new Date year, month, day, hour, min
 
     g.callbacks.push Time.node
@@ -1916,22 +1927,23 @@ quoteBacklink =
     quoteBacklink.funk = Function 'id', "return'#{format}'"
     g.callbacks.push (root) ->
       return if root.classList.contains 'inline'
-      # op or reply
-      id = $('input', root).name
       quotes = {}
       for quote in $$ '.quotelink', root
         #don't process >>>/b/
         continue unless qid = quote.hash[1..]
         #duplicate quotes get overwritten
         quotes[qid] = quote
+      # op or reply
+      id = $('input', root).name
+      a = $.el 'a',
+        href: "##{id}"
+        className: if root.hidden then 'filtered backlink' else 'backlink'
+        textContent: quoteBacklink.funk id
       for qid of quotes
         continue unless el = $.id qid
         #don't backlink the op
-        continue if !conf['OP Backlinks'] and el.className is 'op'
-        link = $.el 'a',
-          href: "##{id}"
-          className: 'backlink'
-          textContent: quoteBacklink.funk id
+        continue if el.className is 'op' and !conf['OP Backlinks']
+        link = a.cloneNode true
         if conf['Quote Preview']
           $.bind link, 'mouseover', quotePreview.mouseover
           $.bind link, 'mousemove', ui.hover
@@ -1984,10 +1996,10 @@ quoteInline =
   rm: (q, id) ->
     #select the corresponding table or loading td
     table = $.x "following::*[@id='i#{id}']", q
-    for inlined in $$ 'input', table
-      if hidden = $.id inlined.name
-        unless hidden.classList.contains 'op'
-          $.x('ancestor::table[1]', hidden).hidden = false
+    for inlined in $$ '.backlink.inlined:not(.filtered)', table
+      $.x('ancestor::table', $.id inlined.hash[1..]).hidden = false
+    if q.classList.contains('backlink') and not q.classList.contains 'filtered'
+      $.x('ancestor::table', $.id id).hidden = false
     $.rm table
 
   parse: (req, pathname, id, threadID, inline) ->
@@ -2134,7 +2146,7 @@ unread =
     if unread.replies.length is 1
       Favicon.update()
 
-  scroll: (e) ->
+  scroll: ->
     updater.focus = true
     height = d.body.clientHeight
     for reply, i in unread.replies
@@ -2187,12 +2199,12 @@ Favicon =
 
 redirect = ->
   switch g.BOARD
-    when 'g', 'sci'
-      url = "http://archive.installgentoo.net/cgi-board.pl/#{g.BOARD}/thread/#{g.THREAD_ID}"
-    when 'lit', 'tv'
+    when 'diy', 'g', 'pol', 'sci'
+      url = "http://archive.installgentoo.net/#{g.BOARD}/thread/#{g.THREAD_ID}"
+    when 'lit'
       url = "http://archive.gentoomen.org/cgi-board.pl/#{g.BOARD}/thread/#{g.THREAD_ID}"
-    when 'a', 'jp', 'm', 'tg'
-      url = "http://archive.easymodo.net/#{g.BOARD}/thread/#{g.THREAD_ID}"
+    when 'a', 'jp', 'tv'
+      url = "http://archive.foolz.us/#{g.BOARD}/thread/#{g.THREAD_ID}"
     when '3', 'adv', 'an', 'ck', 'co', 'fa', 'fit', 'int', 'k', 'mu', 'n', 'o', 'p', 'po', 'soc', 'sp', 'toy', 'trv', 'v', 'vp', 'x'
       url = "http://archive.no-ip.org/#{g.BOARD}/thread/#{g.THREAD_ID}"
     else
@@ -2206,7 +2218,7 @@ imgHover =
       $.bind thumb, 'mouseover', imgHover.mouseover
       $.bind thumb, 'mousemove', ui.hover
       $.bind thumb, 'mouseout',  ui.hoverend
-  mouseover: (e) ->
+  mouseover: ->
     ui.el = $.el 'img'
       id: 'iHover'
       src: @parentNode.href
@@ -2214,10 +2226,28 @@ imgHover =
 
 imgPreloading =
   init: ->
-    g.callbacks.push (root) ->
-      return unless thumb = $ 'img[md5]', root
-      src = thumb.parentNode.href
-      el = $.el 'img', { src }
+    unless controls = $.id 'imgControls'
+      controls = $.el 'div',
+        id: 'imgControls'
+      form = $ 'body > form'
+      $.prepend form, controls
+
+    label = $.el 'label',
+      innerHTML: 'Preload Images<input type=checkbox id=imagePreload>'
+    $.bind $('input', label), 'click', imgPreloading.click
+    $.add controls, label
+
+    g.callbacks.push imgPreloading.node
+
+  click: ->
+    if imgPreloading.on = @checked
+      for thumb in $$ 'img[md5]:last-child'
+        imgPreloading.preload thumb
+  node: (root) ->
+    return unless imgPreloading.on and thumb = $ 'img[md5]:last-child', root
+    imgPreloading.preload thumb
+  preload: (thumb) ->
+    $.el 'img', src: thumb.parentNode.href
 
 imgGif =
   init: ->
@@ -2231,9 +2261,6 @@ imgExpand =
   init: ->
     g.callbacks.push imgExpand.node
     imgExpand.dialog()
-    $.bind window, 'resize', imgExpand.resize
-    imgExpand.style = $.addStyle ''
-    imgExpand.resize()
 
   node: (root) ->
     return unless thumb = $ 'img[md5]', root
@@ -2245,7 +2272,7 @@ imgExpand =
       return if e.shiftKey or e.altKey or e.ctrlKey or e.button isnt 0
       e.preventDefault()
       imgExpand.toggle @
-    all: (e) ->
+    all: ->
       imgExpand.on = @checked
       if imgExpand.on #expand
         for thumb in $$ 'img[md5]:not([hidden])'
@@ -2253,7 +2280,7 @@ imgExpand =
       else #contract
         for thumb in $$ 'img[md5][hidden]'
           imgExpand.contract thumb
-    typeChange: (e) ->
+    typeChange: ->
       switch @value
         when 'full'
           klass = ''
@@ -2263,7 +2290,15 @@ imgExpand =
           klass = 'fitheight'
         when 'fit screen'
           klass = 'fitwidth fitheight'
-      d.body.className = klass
+      form = $('body > form')
+      form.className = klass
+      if form.classList.contains 'fitheight'
+        $.bind window, 'resize', imgExpand.resize
+        unless imgExpand.style
+          imgExpand.style = $.addStyle ''
+        imgExpand.resize()
+      else if imgExpand.style
+        $.unbind window, 'resize', imgExpand.resize
 
   toggle: (a) ->
     thumb = a.firstChild
@@ -2288,13 +2323,13 @@ imgExpand =
     thumb.hidden = true
     $.add a, img
 
-  error: (e) ->
+  error: ->
     thumb = @previousSibling
     imgExpand.contract thumb
     #navigator.online is not x-browser/os yet
     if navigator.appName isnt 'Opera'
       req = $.ajax @src, null, 'head'
-      req.onreadystatechange = (e) -> setTimeout imgExpand.retry, 10000, thumb if @status isnt 404
+      req.onreadystatechange = -> setTimeout imgExpand.retry, 10000, thumb if @status isnt 404
     else unless g.dead
       setTimeout imgExpand.retry, 10000, thumb
   retry: (thumb) ->
@@ -2317,11 +2352,11 @@ imgExpand =
     $.bind select, 'change', imgExpand.cb.typeChange
     $.bind $('input', controls), 'click', imgExpand.cb.all
 
-    delform = $ 'form[name=delform]'
-    $.prepend delform, controls
+    form = $ 'body > form'
+    $.prepend form, controls
 
-  resize: (e) ->
-    imgExpand.style.innerHTML = ".fitheight img[md5] + img {max-height:#{d.body.clientHeight}px;}"
+  resize: ->
+    imgExpand.style.innerHTML = ".fitheight img + img {max-height:#{d.body.clientHeight}px;}"
 
 firstRun =
   init: ->
@@ -2385,14 +2420,12 @@ firstRun =
     dialog = $.el 'div',
       id: 'overlay'
       className: 'firstrun'
-      innerHTML: "
-        <div id=options>
-          <div class='reply dialog'>
-            <p>Click the <strong>4chan X</strong> buttons for options; they are at the top and bottom of the page.</p>
-            <p>Updater options are in the updater dialog in replies at the bottom-right corner of the window.</p>
-            <p>If you don't see the buttons, try disabling your userstyles.</p>
-          </div>
-        </div>"
+      innerHTML: '
+<div id=options class="reply dialog">
+  <p>Click the <strong>4chan X</strong> buttons for options; they are at the top and bottom of the page.</p>
+  <p>Updater options are in the updater dialog in replies at the bottom-right corner of the window.</p>
+  <p>If you don\'t see the buttons, try disabling your userstyles.</p>
+</div>'
     $.add d.body, dialog
 
     $.bind window, 'click', firstRun.close
@@ -2405,29 +2438,30 @@ firstRun =
 
 Main =
   init: ->
-    $.unbind document, 'DOMContentLoaded', Main.init
     if location.hostname is 'sys.4chan.org'
-      Post.sys()
-      return
-    if conf['404 Redirect'] and d.title is '4chan - 404' and /^\d+$/.test g.THREAD_ID
-      redirect()
-      return
-    if not $ '#navtopr'
+      if d.body
+        Post.sys()
+      else
+        $.bind d, 'DOMContentLoaded', Post.sys
       return
 
     $.bind window, 'message', Main.message
-    Main.globalMessage()
-    Favicon.init()
+
+    pathname = location.pathname.substring(1).split('/')
+    [g.BOARD, temp] = pathname
+    if temp is 'res'
+      g.REPLY = temp
+      g.THREAD_ID = pathname[2]
+    else
+      g.PAGENUM = parseInt(temp) or 0
+
     g.hiddenReplies = $.get "hiddenReplies/#{g.BOARD}/", {}
-    tzOffset = (new Date()).getTimezoneOffset() / 60
-    # GMT -8 is given as +480; would GMT +8 be -480 ?
-    g.chanOffset = 5 - tzOffset
-    # 4chan = EST = GMT -5
-    g.chanOffset-- if $.isDST()
 
     lastChecked = $.get 'lastChecked', 0
     now = Date.now()
-    if lastChecked < now - 1*DAY
+    Main.reqUpdate = lastChecked < now - 1*DAY
+
+    if Main.reqUpdate
       $.set 'lastChecked', now
 
       cutoff = now - 7*DAY
@@ -2444,22 +2478,19 @@ Main =
       $.set "hiddenThreads/#{g.BOARD}/", hiddenThreads
       $.set "hiddenReplies/#{g.BOARD}/", g.hiddenReplies
 
-    $.addStyle Main.css
 
     #major features
-    threading.init()
-
     if conf['Filter']
       filter.init()
 
     if conf['Reply Hiding']
       replyHiding.init()
 
-    if conf['Image Expansion']
-      imgExpand.init()
+    if conf['Filter'] or conf['Reply Hiding']
+      strikethroughQuotes.init()
 
-    if conf['Image Auto-Gif']
-      imgGif.init()
+    if conf['Anonymize']
+      anonymize.init()
 
     if conf['Time Formatting']
       Time.init()
@@ -2467,18 +2498,11 @@ Main =
     if conf['Sauce']
       sauce.init()
 
-    if conf['Reveal Spoilers'] and $('.postarea label')
-      revealSpoilers.init()
-
-    if conf['Anonymize']
-      anonymize.init()
+    if conf['Image Auto-Gif']
+      imgGif.init()
 
     if conf['Image Hover']
       imgHover.init()
-
-    if conf['Quick Reply']
-      Post.init()
-      #QR.init()
 
     if conf['Report Button']
       reportButton.init()
@@ -2495,6 +2519,35 @@ Main =
     if conf['Indicate OP quote']
       quoteOP.init()
 
+
+    if d.body
+      Main.onLoad()
+    else
+      $.bind d, 'DOMContentLoaded', Main.onLoad
+
+  onLoad: ->
+    $.unbind d, 'DOMContentLoaded', Main.onLoad
+    if conf['404 Redirect'] and d.title is '4chan - 404' and /^\d+$/.test g.THREAD_ID
+      redirect()
+      return
+    if not $ '#navtopr'
+      return
+    Main.globalMessage()
+    $.addStyle Main.css
+    threading.init()
+    Favicon.init()
+
+    #major features
+    if conf['Image Expansion']
+      imgExpand.init()
+
+    if conf['Reveal Spoilers'] and $('.postarea label')
+      revealSpoilers.init()
+
+    if conf['Quick Reply']
+      Post.init()
+      #QR.init()
+
     if conf['Thread Watcher']
       watcher.init()
 
@@ -2505,33 +2558,34 @@ Main =
       if conf['Thread Updater']
         updater.init()
 
-      if conf['Image Preloading']
-        imgPreloading.init()
-
-      if conf['Post in Title']
-        titlePost.init()
-
       if conf['Thread Stats']
         threadStats.init()
 
-      if conf['Unread Count']
-        unread.init()
+      if conf['Image Preloading']
+        imgPreloading.init()
 
       if conf['Reply Navigation']
         nav.init()
 
+      if conf['Post in Title']
+        titlePost.init()
+
+      if conf['Unread Count']
+        unread.init()
+
     else #not reply
       if conf['Thread Hiding']
         threadHiding.init()
-
-      if conf['Index Navigation']
-        nav.init()
 
       if conf['Thread Expansion']
         expandThread.init()
 
       if conf['Comment Expansion']
         expandComment.init()
+
+      if conf['Index Navigation']
+        nav.init()
+
 
     nodes = $$ '.op, a + table'
     g.callbacks.forEach (callback) ->
@@ -2609,10 +2663,10 @@ Main =
         float: left;
         pointer-events: none;
       }
-      img[md5], img[md5] + img {
+      img[md5], img + img {
         pointer-events: all;
       }
-      body.fitwidth img[md5] + img {
+      .fitwidth img + img {
         max-width: 100%;
         width: -moz-calc(100%); /* hack so only firefox sees this */
       }
@@ -2633,21 +2687,25 @@ Main =
       }
 
       #overlay {
-        display: table;
         position: fixed;
         top: 0;
         left: 0;
         height: 100%;
         width: 100%;
+        text-align: center;
         background: rgba(0,0,0,.5);
       }
-      #options {
-        display: table-cell;
+      #overlay::before {
+        content: "";
+        display: inline-block;
+        height: 100%;
         vertical-align: middle;
       }
-      #options .dialog {
-        margin: auto;
+      #options {
+        display: inline-block;
         padding: 5px;
+        text-align: left;
+        vertical-align: middle;
         width: 500px;
       }
       #credits {
@@ -2732,6 +2790,9 @@ Main =
       }
       .filetitle, .replytitle, .postername, .commentpostername, .postertrip {
         background: none;
+      }
+      .filtered {
+        text-decoration: line-through;
       }
 
       /* Firefox bug: hidden tables are not hidden. fixed in 9.0 */
@@ -2844,7 +2905,4 @@ Main =
       }
     '
 
-if d.body
-  Main.init()
-else
-  $.bind d, 'DOMContentLoaded', Main.init
+Main.init()

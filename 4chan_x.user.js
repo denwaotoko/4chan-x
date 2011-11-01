@@ -61,7 +61,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, pathname, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, temp, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
   config = {
     main: {
@@ -168,10 +168,9 @@
   }
   if (!Object.keys) {
     Object.keys = function(o) {
-      var key, _i, _len, _results;
+      var key, _results;
       _results = [];
-      for (_i = 0, _len = o.length; _i < _len; _i++) {
-        key = o[_i];
+      for (key in o) {
         _results.push(key);
       }
       return _results;
@@ -208,13 +207,15 @@
   };
   ui = {
     dialog: function(id, position, html) {
-      var el, saved;
+      var el, saved, _ref;
       el = d.createElement('div');
       el.className = 'reply dialog';
       el.innerHTML = html;
       el.id = id;
       el.style.cssText = (saved = localStorage["" + NAMESPACE + id + ".position"]) ? saved : position;
-      el.querySelector('div.move').addEventListener('mousedown', ui.dragstart, false);
+      if ((_ref = el.querySelector('div.move')) != null) {
+        _ref.addEventListener('mousedown', ui.dragstart, false);
+      }
       return el;
     },
     dragstart: function(e) {
@@ -232,19 +233,11 @@
     drag: function(e) {
       var bottom, left, right, style, top;
       left = e.clientX - ui.dx;
-      if (left < 10) {
-        left = '0';
-      } else if (ui.width - left < 10) {
-        left = null;
-      }
-      right = left ? null : 0;
       top = e.clientY - ui.dy;
-      if (top < 10) {
-        top = '0';
-      } else if (ui.height - top < 10) {
-        top = null;
-      }
-      bottom = top ? null : 0;
+      left = left < 10 ? 0 : ui.width - left < 10 ? null : left;
+      top = top < 10 ? 0 : ui.height - top < 10 ? null : top;
+      right = left === null ? 0 : null;
+      bottom = top === null ? 0 : null;
       style = ui.el.style;
       style.top = top;
       style.right = right;
@@ -275,7 +268,7 @@
         return style.right = clientWidth - clientX + 45;
       }
     },
-    hoverend: function(e) {
+    hoverend: function() {
       return ui.el.parentNode.removeChild(ui.el);
     }
   };
@@ -510,14 +503,6 @@
     val = conf[key];
     conf[key] = $.get(key, val);
   }
-  pathname = location.pathname.substring(1).split('/');
-  g.BOARD = pathname[0], temp = pathname[1];
-  if (temp === 'res') {
-    g.REPLY = temp;
-    g.THREAD_ID = pathname[2];
-  } else {
-    g.PAGENUM = parseInt(temp) || 0;
-  }
   $$ = function(selector, root) {
     if (root == null) {
       root = d.body;
@@ -603,6 +588,23 @@
       }
     }
   };
+  strikethroughQuotes = {
+    init: function() {
+      return g.callbacks.push(function(root) {
+        var el, quote, _i, _len, _ref, _results;
+        if (root.className === 'inline') {
+          return;
+        }
+        _ref = $$('.quotelink', root);
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          quote = _ref[_i];
+          _results.push((el = $.id(quote.hash.slice(1))) ? el.parentNode.parentNode.parentNode.hidden ? $.addClass(quote, 'filtered') : void 0 : void 0);
+        }
+        return _results;
+      });
+    }
+  };
   expandComment = {
     init: function() {
       var a, _i, _len, _ref, _results;
@@ -684,14 +686,14 @@
       return _results;
     },
     cb: {
-      toggle: function(e) {
+      toggle: function() {
         var thread;
         thread = this.parentNode;
         return expandThread.toggle(thread);
       }
     },
     toggle: function(thread) {
-      var a, backlink, num, prev, table, threadID, _i, _len, _ref, _ref2, _results;
+      var a, backlink, num, pathname, prev, table, threadID, _i, _len, _ref, _ref2, _results;
       threadID = thread.firstChild.id;
       pathname = "/" + g.BOARD + "/res/" + threadID;
       a = $('.omittedposts', thread);
@@ -794,12 +796,12 @@
       });
     },
     cb: {
-      hide: function(e) {
+      hide: function() {
         var reply;
         reply = this.parentNode.nextSibling;
         return replyHiding.hide(reply);
       },
-      show: function(e) {
+      show: function() {
         var div, table;
         div = this.parentNode;
         table = div.nextSibling;
@@ -808,9 +810,14 @@
       }
     },
     hide: function(reply) {
-      var id;
+      var id, quote, _i, _len, _ref;
       replyHiding.hideHide(reply);
       id = reply.id;
+      _ref = $$(".quotelink[href='#" + id + "'], .backlink[href='#" + id + "']");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        quote = _ref[_i];
+        $.addClass(quote, 'filtered');
+      }
       g.hiddenReplies[id] = Date.now();
       return $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
     },
@@ -833,9 +840,14 @@
       }
     },
     show: function(table) {
-      var id;
+      var id, quote, _i, _len, _ref;
       table.hidden = false;
       id = $('td[id]', table).id;
+      _ref = $$(".quotelink[href='#" + id + "'], .backlink[href='#" + id + "']");
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        quote = _ref[_i];
+        $.removeClass(quote, 'filtered');
+      }
       delete g.hiddenReplies[id];
       return $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
     }
@@ -1209,89 +1221,84 @@
     },
     dialog: function() {
       var arr, back, checked, description, dialog, hiddenNum, hiddenThreads, input, key, li, obj, overlay, ta, time, ul, _i, _j, _len, _len2, _ref, _ref2, _ref3;
-      dialog = $.el('div', {
-        id: 'options',
-        innerHTML: '\
-<div class="reply dialog">\
-  <div id=optionsbar>\
-    <div id=credits>\
-      <a href=http://aeosynth.github.com/4chan-x/>4chan X</a>\
-      | <a href=https://github.com/aeosynth/4chan-x/issues>GitHub</a>\
-      | <a href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>\
-    </div>\
-    <div>\
-      <label for=main_tab>Main</label>\
-      | <label for=filter_tab>Filter</label>\
-      | <label for=flavors_tab>Sauce</label>\
-      | <label for=rice_tab>Rice</label>\
-      | <label for=keybinds_tab>Keybinds</label>\
-    </div>\
+      dialog = ui.dialog('options', '', '\
+<div id=optionsbar>\
+  <div id=credits>\
+    <a target=_blank href=http://aeosynth.github.com/4chan-x/>4chan X</a>\
+    | <a target=_blank href=https://github.com/aeosynth/4chan-x/issues>Issues</a>\
+    | <a target=_blank href=https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2DBVZBUAM4DHC&lc=US&item_name=Aeosynth&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHosted>Donate</a>\
   </div>\
-  <hr>\
-  <div id=content>\
-    <input type=radio name=tab hidden id=main_tab checked>\
-    <div id=main></div>\
-    <input type=radio name=tab hidden id=flavors_tab>\
-    <textarea name=flavors id=flavors></textarea>\
-    <input type=radio name=tab hidden id=filter_tab>\
-    <div id=filter>\
-      Use <a href=https://developer.mozilla.org/en/JavaScript/Guide/Regular_Expressions>regular expressions</a>, one per line.<br>\
-      For example, <code>/weeaboo/i</code> will filter posts containing `weeaboo` case-insensitive.\
-      <p>Name:<br><textarea name=name></textarea></p>\
-      <p>Tripcode:<br><textarea name=trip></textarea></p>\
-      <p>E-mail:<br><textarea name=mail></textarea></p>\
-      <p>Subject:<br><textarea name=sub></textarea></p>\
-      <p>Comment:<br><textarea name=com></textarea></p>\
-      <p>Filename:<br><textarea name=file></textarea></p>\
-      <p>Image MD5:<br><textarea name=md5></textarea></p>\
-    </div>\
-    <input type=radio name=tab hidden id=rice_tab>\
-    <div id=rice>\
-      <ul>\
-        Backlink formatting\
-        <li><input type=text name=backlink> : <span id=backlinkPreview></span></li>\
-      </ul>\
-      <ul>\
-        Time formatting\
-        <li><input type=text name=time> : <span id=timePreview></span></li>\
-        <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>\
-        <li>Day: %a, %A, %d, %e</li>\
-        <li>Month: %m, %b, %B</li>\
-        <li>Year: %y</li>\
-        <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>\
-        <li>Minutes: %M</li>\
-      </ul>\
-    </div>\
-    <input type=radio name=tab hidden id=keybinds_tab>\
-    <div id=keybinds>\
-      <table><tbody>\
-        <tr><th>Actions</th><th>Keybinds</th></tr>\
-        <tr><td>Close Options or QR</td><td><input name=close></td></tr>\
-        <tr><td>Quick spoiler</td><td><input name=spoiler></td></tr>\
-        <tr><td>Open QR with post number inserted</td><td><input name=openQR></td></tr>\
-        <tr><td>Open QR without post number inserted</td><td><input name=openEmptyQR></td></tr>\
-        <tr><td>Submit post</td><td><input name=submit></td></tr>\
-        <tr><td>Select next reply</td><td><input name=nextReply ></td></tr>\
-        <tr><td>Select previous reply</td><td><input name=previousReply></td></tr>\
-        <tr><td>See next thread</td><td><input name=nextThread></td></tr>\
-        <tr><td>See previous thread</td><td><input name=previousThread></td></tr>\
-        <tr><td>Jump to the next page</td><td><input name=nextPage></td></tr>\
-        <tr><td>Jump to the previous page</td><td><input name=previousPage></td></tr>\
-        <tr><td>Jump to page 0</td><td><input name=zero></td></tr>\
-        <tr><td>Open thread in current tab</td><td><input name=openThread></td></tr>\
-        <tr><td>Open thread in new tab</td><td><input name=openThreadTab></td></tr>\
-        <tr><td>Expand thread</td><td><input name=expandThread></td></tr>\
-        <tr><td>Watch thread</td><td><input name=watch></td></tr>\
-        <tr><td>Hide thread</td><td><input name=hide></td></tr>\
-        <tr><td>Expand selected image</td><td><input name=expandImages></td></tr>\
-        <tr><td>Expand all images</td><td><input name=expandAllImages></td></tr>\
-        <tr><td>Update now</td><td><input name=update></td></tr>\
-        <tr><td>Reset the unread count to 0</td><td><input name=unreadCountTo0></td></tr>\
-      </tbody></table>\
-    </div>\
+  <div>\
+    <label for=main_tab>Main</label>\
+    | <label for=filter_tab>Filter</label>\
+    | <label for=flavors_tab>Sauce</label>\
+    | <label for=rice_tab>Rice</label>\
+    | <label for=keybinds_tab>Keybinds</label>\
   </div>\
-</div>'
-      });
+</div>\
+<hr>\
+<div id=content>\
+  <input type=radio name=tab hidden id=main_tab checked>\
+  <div id=main></div>\
+  <input type=radio name=tab hidden id=flavors_tab>\
+  <textarea name=flavors id=flavors></textarea>\
+  <input type=radio name=tab hidden id=filter_tab>\
+  <div id=filter>\
+    Use <a href=https://developer.mozilla.org/en/JavaScript/Guide/Regular_Expressions>regular expressions</a>, one per line.<br>\
+    For example, <code>/weeaboo/i</code> will filter posts containing `weeaboo` case-insensitive.\
+    <p>Name:<br><textarea name=name></textarea></p>\
+    <p>Tripcode:<br><textarea name=trip></textarea></p>\
+    <p>E-mail:<br><textarea name=mail></textarea></p>\
+    <p>Subject:<br><textarea name=sub></textarea></p>\
+    <p>Comment:<br><textarea name=com></textarea></p>\
+    <p>Filename:<br><textarea name=file></textarea></p>\
+    <p>Image MD5:<br><textarea name=md5></textarea></p>\
+  </div>\
+  <input type=radio name=tab hidden id=rice_tab>\
+  <div id=rice>\
+    <ul>\
+      Backlink formatting\
+      <li><input type=text name=backlink> : <span id=backlinkPreview></span></li>\
+    </ul>\
+    <ul>\
+      Time formatting\
+      <li><input type=text name=time> : <span id=timePreview></span></li>\
+      <li>Supported <a href=http://en.wikipedia.org/wiki/Date_%28Unix%29#Formatting>format specifiers</a>:</li>\
+      <li>Day: %a, %A, %d, %e</li>\
+      <li>Month: %m, %b, %B</li>\
+      <li>Year: %y</li>\
+      <li>Hour: %k, %H, %l (lowercase L), %I (uppercase i), %p, %P</li>\
+      <li>Minutes: %M</li>\
+    </ul>\
+  </div>\
+  <input type=radio name=tab hidden id=keybinds_tab>\
+  <div id=keybinds>\
+    <table><tbody>\
+      <tr><th>Actions</th><th>Keybinds</th></tr>\
+      <tr><td>Close Options or QR</td><td><input name=close></td></tr>\
+      <tr><td>Quick spoiler</td><td><input name=spoiler></td></tr>\
+      <tr><td>Open QR with post number inserted</td><td><input name=openQR></td></tr>\
+      <tr><td>Open QR without post number inserted</td><td><input name=openEmptyQR></td></tr>\
+      <tr><td>Submit post</td><td><input name=submit></td></tr>\
+      <tr><td>Select next reply</td><td><input name=nextReply ></td></tr>\
+      <tr><td>Select previous reply</td><td><input name=previousReply></td></tr>\
+      <tr><td>See next thread</td><td><input name=nextThread></td></tr>\
+      <tr><td>See previous thread</td><td><input name=previousThread></td></tr>\
+      <tr><td>Jump to the next page</td><td><input name=nextPage></td></tr>\
+      <tr><td>Jump to the previous page</td><td><input name=previousPage></td></tr>\
+      <tr><td>Jump to page 0</td><td><input name=zero></td></tr>\
+      <tr><td>Open thread in current tab</td><td><input name=openThread></td></tr>\
+      <tr><td>Open thread in new tab</td><td><input name=openThreadTab></td></tr>\
+      <tr><td>Expand thread</td><td><input name=expandThread></td></tr>\
+      <tr><td>Watch thread</td><td><input name=watch></td></tr>\
+      <tr><td>Hide thread</td><td><input name=hide></td></tr>\
+      <tr><td>Expand selected image</td><td><input name=expandImages></td></tr>\
+      <tr><td>Expand all images</td><td><input name=expandAllImages></td></tr>\
+      <tr><td>Update now</td><td><input name=update></td></tr>\
+      <tr><td>Reset the unread count to 0</td><td><input name=unreadCountTo0></td></tr>\
+    </tbody></table>\
+  </div>\
+</div>');
       _ref = config.main;
       for (key in _ref) {
         obj = _ref[key];
@@ -1334,19 +1341,13 @@
         input.value = conf[input.name];
         $.bind(input, 'keydown', options.keybind);
       }
-      /*
-          Two parent divs are necessary to center on all browsers.
-      
-          Only one when Firefox and Opera will support flexboxes correctly.
-          https://bugzilla.mozilla.org/show_bug.cgi?id=579776
-          */
       overlay = $.el('div', {
         id: 'overlay'
       });
       $.bind(overlay, 'click', function() {
         return $.rm(overlay);
       });
-      $.bind(dialog.firstElementChild, 'click', function(e) {
+      $.bind(dialog, 'click', function(e) {
         return e.stopPropagation();
       });
       $.add(overlay, dialog);
@@ -1354,7 +1355,7 @@
       options.time.call(time);
       return options.backlink.call(back);
     },
-    clearHidden: function(e) {
+    clearHidden: function() {
       $["delete"]("hiddenReplies/" + g.BOARD + "/");
       $["delete"]("hiddenThreads/" + g.BOARD + "/");
       this.textContent = "hidden: 0";
@@ -1370,14 +1371,14 @@
       $.set(this.name, key);
       return conf[this.name] = key;
     },
-    time: function(e) {
+    time: function() {
       $.set('time', this.value);
       conf['time'] = this.value;
       Time.foo();
       Time.date = new Date();
       return $('#timePreview').textContent = Time.funk(Time);
     },
-    backlink: function(e) {
+    backlink: function() {
       $.set('backlink', this.value);
       conf['backlink'] = this.value;
       return $('#backlinkPreview').textContent = conf['backlink'].replace(/%id/, '123456789');
@@ -1941,6 +1942,7 @@
     },
     sys: function() {
       var recaptcha;
+      $.unbind(d, 'DOMContentLoaded', QR.sys);
       if (recaptcha = $('#recaptcha_response_field')) {
         $.bind(recaptcha, 'keydown', QR.keydown);
         return;
@@ -2013,7 +2015,7 @@
     init: function() {
       var a, hiddenThreads, op, thread, _i, _len, _ref, _results;
       hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
-      _ref = $$('div.thread');
+      _ref = $$('.thread');
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         thread = _ref[_i];
@@ -2028,12 +2030,12 @@
       return _results;
     },
     cb: {
-      hide: function(e) {
+      hide: function() {
         var thread;
         thread = this.parentNode.parentNode;
         return threadHiding.hide(thread);
       },
-      show: function(e) {
+      show: function() {
         var thread;
         thread = this.parentNode.parentNode;
         return threadHiding.show(thread);
@@ -2096,6 +2098,9 @@
   updater = {
     init: function() {
       var checkbox, checked, dialog, html, input, name, title, _i, _len, _ref;
+      if (!$('form[name=post]')) {
+        return;
+      }
       if (conf['Scrolling']) {
         if (conf['Scroll BG']) {
           updater.focus = true;
@@ -2300,10 +2305,10 @@
       return _results;
     },
     cb: {
-      toggle: function(e) {
+      toggle: function() {
         return watcher.toggle(this.parentNode);
       },
-      x: function(e) {
+      x: function() {
         var board, id, _, _ref;
         _ref = this.nextElementSibling.getAttribute('href').substring(1).split('/'), board = _ref[0], _ = _ref[1], id = _ref[2];
         return watcher.unwatch(board, id);
@@ -2398,15 +2403,20 @@
   };
   Time = {
     init: function() {
+      var chanOffset;
       Time.foo();
+      chanOffset = 5 - new Date().getTimezoneOffset() / 60;
+      if ($.isDST()) {
+        chanOffset--;
+      }
       this.parse = Date.parse('10/11/11(Tue)18:53') ? function(node) {
-        return new Date(Date.parse(node.textContent) + g.chanOffset * HOUR);
+        return new Date(Date.parse(node.textContent) + chanOffset * HOUR);
       } : function(node) {
         var day, hour, min, month, year, _, _ref;
         _ref = node.textContent.match(/(\d+)\/(\d+)\/(\d+)\(\w+\)(\d+):(\d+)/), _ = _ref[0], month = _ref[1], day = _ref[2], year = _ref[3], hour = _ref[4], min = _ref[5];
         year = "20" + year;
         month -= 1;
-        hour = g.chanOffset + Number(hour);
+        hour = chanOffset + Number(hour);
         return new Date(year, month, day, hour, min);
       };
       return g.callbacks.push(Time.node);
@@ -2524,11 +2534,10 @@
       format = conf['backlink'].replace(/%id/, "' + id + '");
       quoteBacklink.funk = Function('id', "return'" + format + "'");
       return g.callbacks.push(function(root) {
-        var container, el, id, link, qid, quote, quotes, _i, _len, _ref, _results;
+        var a, container, el, id, link, qid, quote, quotes, _i, _len, _ref, _results;
         if (root.classList.contains('inline')) {
           return;
         }
-        id = $('input', root).name;
         quotes = {};
         _ref = $$('.quotelink', root);
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -2538,19 +2547,21 @@
           }
           quotes[qid] = quote;
         }
+        id = $('input', root).name;
+        a = $.el('a', {
+          href: "#" + id,
+          className: root.hidden ? 'filtered backlink' : 'backlink',
+          textContent: quoteBacklink.funk(id)
+        });
         _results = [];
         for (qid in quotes) {
           if (!(el = $.id(qid))) {
             continue;
           }
-          if (!conf['OP Backlinks'] && el.className === 'op') {
+          if (el.className === 'op' && !conf['OP Backlinks']) {
             continue;
           }
-          link = $.el('a', {
-            href: "#" + id,
-            className: 'backlink',
-            textContent: quoteBacklink.funk(id)
-          });
+          link = a.cloneNode(true);
           if (conf['Quote Preview']) {
             $.bind(link, 'mouseover', quotePreview.mouseover);
             $.bind(link, 'mousemove', ui.hover);
@@ -2607,7 +2618,7 @@
       return this.classList.toggle('inlined');
     },
     add: function(q, id) {
-      var el, inline, root, threadID;
+      var el, inline, pathname, root, threadID;
       root = q.parentNode.nodeName === 'FONT' ? q.parentNode : q.nextSibling ? q.nextSibling : q;
       if (el = $.id(id)) {
         inline = quoteInline.table(id, el.innerHTML);
@@ -2632,16 +2643,15 @@
       }
     },
     rm: function(q, id) {
-      var hidden, inlined, table, _i, _len, _ref;
+      var inlined, table, _i, _len, _ref;
       table = $.x("following::*[@id='i" + id + "']", q);
-      _ref = $$('input', table);
+      _ref = $$('.backlink.inlined:not(.filtered)', table);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         inlined = _ref[_i];
-        if (hidden = $.id(inlined.name)) {
-          if (!hidden.classList.contains('op')) {
-            $.x('ancestor::table[1]', hidden).hidden = false;
-          }
-        }
+        $.x('ancestor::table', $.id(inlined.hash.slice(1))).hidden = false;
+      }
+      if (q.classList.contains('backlink') && !q.classList.contains('filtered')) {
+        $.x('ancestor::table', $.id(id)).hidden = false;
       }
       return $.rm(table);
     },
@@ -2865,7 +2875,7 @@
         return Favicon.update();
       }
     },
-    scroll: function(e) {
+    scroll: function() {
       var bottom, height, i, reply, _len, _ref;
       updater.focus = true;
       height = d.body.clientHeight;
@@ -2916,19 +2926,19 @@
   redirect = function() {
     var url;
     switch (g.BOARD) {
+      case 'diy':
       case 'g':
+      case 'pol':
       case 'sci':
-        url = "http://archive.installgentoo.net/cgi-board.pl/" + g.BOARD + "/thread/" + g.THREAD_ID;
+        url = "http://archive.installgentoo.net/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;
       case 'lit':
-      case 'tv':
         url = "http://archive.gentoomen.org/cgi-board.pl/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;
       case 'a':
       case 'jp':
-      case 'm':
-      case 'tg':
-        url = "http://archive.easymodo.net/" + g.BOARD + "/thread/" + g.THREAD_ID;
+      case 'tv':
+        url = "http://archive.foolz.us/" + g.BOARD + "/thread/" + g.THREAD_ID;
         break;
       case '3':
       case 'adv':
@@ -2970,7 +2980,7 @@
         return $.bind(thumb, 'mouseout', ui.hoverend);
       });
     },
-    mouseover: function(e) {
+    mouseover: function() {
       ui.el = $.el('img', {
         id: 'iHover',
         src: this.parentNode.href
@@ -2980,15 +2990,43 @@
   };
   imgPreloading = {
     init: function() {
-      return g.callbacks.push(function(root) {
-        var el, src, thumb;
-        if (!(thumb = $('img[md5]', root))) {
-          return;
-        }
-        src = thumb.parentNode.href;
-        return el = $.el('img', {
-          src: src
+      var controls, form, label;
+      if (!(controls = $.id('imgControls'))) {
+        controls = $.el('div', {
+          id: 'imgControls'
         });
+        form = $('body > form');
+        $.prepend(form, controls);
+      }
+      label = $.el('label', {
+        innerHTML: 'Preload Images<input type=checkbox id=imagePreload>'
+      });
+      $.bind($('input', label), 'click', imgPreloading.click);
+      $.add(controls, label);
+      return g.callbacks.push(imgPreloading.node);
+    },
+    click: function() {
+      var thumb, _i, _len, _ref, _results;
+      if (imgPreloading.on = this.checked) {
+        _ref = $$('img[md5]:last-child');
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          thumb = _ref[_i];
+          _results.push(imgPreloading.preload(thumb));
+        }
+        return _results;
+      }
+    },
+    node: function(root) {
+      var thumb;
+      if (!(imgPreloading.on && (thumb = $('img[md5]:last-child', root)))) {
+        return;
+      }
+      return imgPreloading.preload(thumb);
+    },
+    preload: function(thumb) {
+      return $.el('img', {
+        src: thumb.parentNode.href
       });
     }
   };
@@ -3009,10 +3047,7 @@
   imgExpand = {
     init: function() {
       g.callbacks.push(imgExpand.node);
-      imgExpand.dialog();
-      $.bind(window, 'resize', imgExpand.resize);
-      imgExpand.style = $.addStyle('');
-      return imgExpand.resize();
+      return imgExpand.dialog();
     },
     node: function(root) {
       var a, thumb;
@@ -3033,7 +3068,7 @@
         e.preventDefault();
         return imgExpand.toggle(this);
       },
-      all: function(e) {
+      all: function() {
         var thumb, _i, _j, _len, _len2, _ref, _ref2, _results, _results2;
         imgExpand.on = this.checked;
         if (imgExpand.on) {
@@ -3054,8 +3089,8 @@
           return _results2;
         }
       },
-      typeChange: function(e) {
-        var klass;
+      typeChange: function() {
+        var form, klass;
         switch (this.value) {
           case 'full':
             klass = '';
@@ -3069,7 +3104,17 @@
           case 'fit screen':
             klass = 'fitwidth fitheight';
         }
-        return d.body.className = klass;
+        form = $('body > form');
+        form.className = klass;
+        if (form.classList.contains('fitheight')) {
+          $.bind(window, 'resize', imgExpand.resize);
+          if (!imgExpand.style) {
+            imgExpand.style = $.addStyle('');
+          }
+          return imgExpand.resize();
+        } else if (imgExpand.style) {
+          return $.unbind(window, 'resize', imgExpand.resize);
+        }
       }
     },
     toggle: function(a) {
@@ -3100,13 +3145,13 @@
       thumb.hidden = true;
       return $.add(a, img);
     },
-    error: function(e) {
+    error: function() {
       var req, thumb;
       thumb = this.previousSibling;
       imgExpand.contract(thumb);
       if (navigator.appName !== 'Opera') {
         req = $.ajax(this.src, null, 'head');
-        return req.onreadystatechange = function(e) {
+        return req.onreadystatechange = function() {
           if (this.status !== 404) {
             return setTimeout(imgExpand.retry, 10000, thumb);
           }
@@ -3121,7 +3166,7 @@
       }
     },
     dialog: function() {
-      var controls, delform, imageType, option, select, _i, _len, _ref;
+      var controls, form, imageType, option, select, _i, _len, _ref;
       controls = $.el('div', {
         id: 'imgControls',
         innerHTML: "<select id=imageType name=imageType><option>full</option><option>fit width</option><option>fit height</option><option>fit screen</option></select>        <label>Expand Images<input type=checkbox id=imageExpand></label>"
@@ -3140,11 +3185,11 @@
       $.bind(select, 'change', $.cb.value);
       $.bind(select, 'change', imgExpand.cb.typeChange);
       $.bind($('input', controls), 'click', imgExpand.cb.all);
-      delform = $('form[name=delform]');
-      return $.prepend(delform, controls);
+      form = $('body > form');
+      return $.prepend(form, controls);
     },
-    resize: function(e) {
-      return imgExpand.style.innerHTML = ".fitheight img[md5] + img {max-height:" + d.body.clientHeight + "px;}";
+    resize: function() {
+      return imgExpand.style.innerHTML = ".fitheight img + img {max-height:" + d.body.clientHeight + "px;}";
     }
   };
   firstRun = {
@@ -3155,7 +3200,12 @@
       dialog = $.el('div', {
         id: 'overlay',
         className: 'firstrun',
-        innerHTML: "        <div id=options>          <div class='reply dialog'>            <p>Click the <strong>4chan X</strong> buttons for options; they are at the top and bottom of the page.</p>            <p>Updater options are in the updater dialog in replies at the bottom-right corner of the window.</p>            <p>If you don't see the buttons, try disabling your userstyles.</p>          </div>        </div>"
+        innerHTML: '\
+<div id=options class="reply dialog">\
+  <p>Click the <strong>4chan X</strong> buttons for options; they are at the top and bottom of the page.</p>\
+  <p>Updater options are in the updater dialog in replies at the bottom-right corner of the window.</p>\
+  <p>If you don\'t see the buttons, try disabling your userstyles.</p>\
+</div>'
       });
       $.add(d.body, dialog);
       return $.bind(window, 'click', firstRun.close);
@@ -3169,31 +3219,29 @@
   };
   Main = {
     init: function() {
-      var cutoff, hiddenThreads, id, lastChecked, nodes, now, timestamp, tzOffset, _ref;
-      $.unbind(document, 'DOMContentLoaded', Main.init);
+      var cutoff, hiddenThreads, id, lastChecked, now, pathname, temp, timestamp, _ref;
       if (location.hostname === 'sys.4chan.org') {
-        Post.sys();
-        return;
-      }
-      if (conf['404 Redirect'] && d.title === '4chan - 404' && /^\d+$/.test(g.THREAD_ID)) {
-        redirect();
-        return;
-      }
-      if (!$('#navtopr')) {
+        if (d.body) {
+          Post.sys();
+        } else {
+          $.bind(d, 'DOMContentLoaded', Post.sys);
+        }
         return;
       }
       $.bind(window, 'message', Main.message);
-      Main.globalMessage();
-      Favicon.init();
-      g.hiddenReplies = $.get("hiddenReplies/" + g.BOARD + "/", {});
-      tzOffset = (new Date()).getTimezoneOffset() / 60;
-      g.chanOffset = 5 - tzOffset;
-      if ($.isDST()) {
-        g.chanOffset--;
+      pathname = location.pathname.substring(1).split('/');
+      g.BOARD = pathname[0], temp = pathname[1];
+      if (temp === 'res') {
+        g.REPLY = temp;
+        g.THREAD_ID = pathname[2];
+      } else {
+        g.PAGENUM = parseInt(temp) || 0;
       }
+      g.hiddenReplies = $.get("hiddenReplies/" + g.BOARD + "/", {});
       lastChecked = $.get('lastChecked', 0);
       now = Date.now();
-      if (lastChecked < now - 1 * DAY) {
+      Main.reqUpdate = lastChecked < now - 1 * DAY;
+      if (Main.reqUpdate) {
         $.set('lastChecked', now);
         cutoff = now - 7 * DAY;
         hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
@@ -3213,19 +3261,17 @@
         $.set("hiddenThreads/" + g.BOARD + "/", hiddenThreads);
         $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
       }
-      $.addStyle(Main.css);
-      threading.init();
       if (conf['Filter']) {
         filter.init();
       }
       if (conf['Reply Hiding']) {
         replyHiding.init();
       }
-      if (conf['Image Expansion']) {
-        imgExpand.init();
+      if (conf['Filter'] || conf['Reply Hiding']) {
+        strikethroughQuotes.init();
       }
-      if (conf['Image Auto-Gif']) {
-        imgGif.init();
+      if (conf['Anonymize']) {
+        anonymize.init();
       }
       if (conf['Time Formatting']) {
         Time.init();
@@ -3233,17 +3279,11 @@
       if (conf['Sauce']) {
         sauce.init();
       }
-      if (conf['Reveal Spoilers'] && $('.postarea label')) {
-        revealSpoilers.init();
-      }
-      if (conf['Anonymize']) {
-        anonymize.init();
+      if (conf['Image Auto-Gif']) {
+        imgGif.init();
       }
       if (conf['Image Hover']) {
         imgHover.init();
-      }
-      if (conf['Quick Reply']) {
-        Post.init();
       }
       if (conf['Report Button']) {
         reportButton.init();
@@ -3260,6 +3300,35 @@
       if (conf['Indicate OP quote']) {
         quoteOP.init();
       }
+      if (d.body) {
+        return Main.onLoad();
+      } else {
+        return $.bind(d, 'DOMContentLoaded', Main.onLoad);
+      }
+    },
+    onLoad: function() {
+      var nodes;
+      $.unbind(d, 'DOMContentLoaded', Main.onLoad);
+      if (conf['404 Redirect'] && d.title === '4chan - 404' && /^\d+$/.test(g.THREAD_ID)) {
+        redirect();
+        return;
+      }
+      if (!$('#navtopr')) {
+        return;
+      }
+      Main.globalMessage();
+      $.addStyle(Main.css);
+      threading.init();
+      Favicon.init();
+      if (conf['Image Expansion']) {
+        imgExpand.init();
+      }
+      if (conf['Reveal Spoilers'] && $('.postarea label')) {
+        revealSpoilers.init();
+      }
+      if (conf['Quick Reply']) {
+        Post.init();
+      }
       if (conf['Thread Watcher']) {
         watcher.init();
       }
@@ -3270,33 +3339,33 @@
         if (conf['Thread Updater']) {
           updater.init();
         }
-        if (conf['Image Preloading']) {
-          imgPreloading.init();
-        }
-        if (conf['Post in Title']) {
-          titlePost.init();
-        }
         if (conf['Thread Stats']) {
           threadStats.init();
         }
-        if (conf['Unread Count']) {
-          unread.init();
+        if (conf['Image Preloading']) {
+          imgPreloading.init();
         }
         if (conf['Reply Navigation']) {
           nav.init();
         }
+        if (conf['Post in Title']) {
+          titlePost.init();
+        }
+        if (conf['Unread Count']) {
+          unread.init();
+        }
       } else {
         if (conf['Thread Hiding']) {
           threadHiding.init();
-        }
-        if (conf['Index Navigation']) {
-          nav.init();
         }
         if (conf['Thread Expansion']) {
           expandThread.init();
         }
         if (conf['Comment Expansion']) {
           expandComment.init();
+        }
+        if (conf['Index Navigation']) {
+          nav.init();
         }
       }
       nodes = $$('.op, a + table');
@@ -3386,10 +3455,10 @@
         float: left;\
         pointer-events: none;\
       }\
-      img[md5], img[md5] + img {\
+      img[md5], img + img {\
         pointer-events: all;\
       }\
-      body.fitwidth img[md5] + img {\
+      .fitwidth img + img {\
         max-width: 100%;\
         width: -moz-calc(100%); /* hack so only firefox sees this */\
       }\
@@ -3410,21 +3479,25 @@
       }\
 \
       #overlay {\
-        display: table;\
         position: fixed;\
         top: 0;\
         left: 0;\
         height: 100%;\
         width: 100%;\
+        text-align: center;\
         background: rgba(0,0,0,.5);\
       }\
-      #options {\
-        display: table-cell;\
+      #overlay::before {\
+        content: "";\
+        display: inline-block;\
+        height: 100%;\
         vertical-align: middle;\
       }\
-      #options .dialog {\
-        margin: auto;\
+      #options {\
+        display: inline-block;\
         padding: 5px;\
+        text-align: left;\
+        vertical-align: middle;\
         width: 500px;\
       }\
       #credits {\
@@ -3509,6 +3582,9 @@
       }\
       .filetitle, .replytitle, .postername, .commentpostername, .postertrip {\
         background: none;\
+      }\
+      .filtered {\
+        text-decoration: line-through;\
       }\
 \
       /* Firefox bug: hidden tables are not hidden. fixed in 9.0 */\
@@ -3621,9 +3697,5 @@
       }\
     '
   };
-  if (d.body) {
-    Main.init();
-  } else {
-    $.bind(d, 'DOMContentLoaded', Main.init);
-  }
+  Main.init();
 }).call(this);
