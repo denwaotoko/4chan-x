@@ -1524,7 +1524,7 @@
       return input;
     },
     getPost: function() {
-      var el, _ref;
+      var captcha, el, _ref;
       el = Post.el;
       if (!Post.captchas.length) {
         return {
@@ -1536,8 +1536,12 @@
           error: 'Error: No text entered.'
         };
       }
+      captcha = Post.captchas.shift();
       return {
-        captcha: Post.captchas.shift(),
+        mode: 'regist',
+        resto: g.THREAD_ID || '',
+        recaptcha_challenge_field: captcha.challenge,
+        recaptcha_response_field: captcha.response,
         com: Post.comments.shift(),
         upfile: $('#items input', el)
       };
@@ -1584,6 +1588,7 @@
       data = {
         to: 'Post.message'
       };
+      alert(this.responseText);
       body = $.el('body', {
         innerHTML: this.responseText
       });
@@ -3423,12 +3428,10 @@
           in the global context.
           */      return $.globalEval(function() {
         return window.addEventListener('message', function(e) {
-          var data, to;
+          var data;
           data = e.data;
-          to = data.to;
-          delete to;
-          if (to === 'sys') {
-            return document.getElementById('iframe').contentWindow.postMessage(data);
+          if (data.to === 'sys') {
+            return document.getElementById('iframe').contentWindow.postMessage(data, '*');
           }
         }, false);
       });

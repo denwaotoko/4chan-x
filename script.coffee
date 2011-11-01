@@ -1150,8 +1150,12 @@ Post =
     unless Post.comments.length or $('#items input', el)?.files.length
       return error: 'Error: No text entered.'
 
+    captcha = Post.captchas.shift()
     return {
-      captcha: Post.captchas.shift()
+      mode: 'regist'
+      resto: g.THREAD_ID or ''
+      recaptcha_challenge_field: captcha.challenge
+      recaptcha_response_field:  captcha.response
       com: Post.comments.shift()
       upfile: $ '#items input', el
     }
@@ -1184,6 +1188,7 @@ Post =
 
   sysCallback: ->
     data = to: 'Post.message'
+    alert @responseText
     body = $.el 'body',
       innerHTML: @responseText
     if node = $('table font b', body)?.firstChild
@@ -2638,10 +2643,8 @@ Main =
     $.globalEval ->
       window.addEventListener('message', (e) ->
         {data} = e
-        {to} = data
-        delete to
-        if to is 'sys'
-          document.getElementById('iframe').contentWindow.postMessage data
+        if data.to is 'sys'
+          document.getElementById('iframe').contentWindow.postMessage data, '*'
       , false)
 
   message: (e) ->
