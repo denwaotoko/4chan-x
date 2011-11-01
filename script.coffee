@@ -1020,7 +1020,8 @@ Post =
     $.add d.body, $.el 'iframe',
       id: 'iframe'
       src: "http://sys.4chan.org/#{g.BOARD}/src"
-    Post.posts = []
+    Post.comments = []
+    Post.captchas = []
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
@@ -1054,15 +1055,22 @@ Post =
     ta.setSelectionRange i, i
     ta.focus()
 
+  stats: ->
+    $('#stats', Post.el).textContent = "comments: #{Post.comments.length}"
+
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
     <div class=move>post</div>
+    <div id=stats></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
-    <button>Share</button>
+    <button id=queue>Queue</button>
+    <button id=share>Share</button>
     '
     $.add el, Post.file()
-    $.bind $('button', el), 'click', Post.share
+    $.bind $('#share', el), 'click', Post.share
+    $.bind $('#queue', el), 'click', Post.pushComment
+    Post.stats()
     $.add d.body, el
     el
 
@@ -1079,10 +1087,11 @@ Post =
     Post.stats()
 
   pushComment: ->
-    unless comment = @value
+    ta = $ 'textarea', Post.el
+    unless comment = ta.value
       alert 'Error: No text entered.'
       return
-    @value = ''
+    ta.value = ''
 
     Post.comments.push comment
     Post.stats()

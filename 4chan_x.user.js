@@ -1390,7 +1390,8 @@
         id: 'iframe',
         src: "http://sys.4chan.org/" + g.BOARD + "/src"
       }));
-      Post.posts = [];
+      Post.comments = [];
+      Post.captchas = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
       if (conf['Persistent QR']) {
@@ -1423,16 +1424,23 @@
       ta.setSelectionRange(i, i);
       return ta.focus();
     },
+    stats: function() {
+      return $('#stats', Post.el).textContent = "comments: " + Post.comments.length;
+    },
     dialog: function() {
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
     <div class=move>post</div>\
+    <div id=stats></div>\
     <ul id=items></ul>\
     <textarea name=com></textarea>\
-    <button>Share</button>\
+    <button id=queue>Queue</button>\
+    <button id=share>Share</button>\
     ');
       $.add(el, Post.file());
-      $.bind($('button', el), 'click', Post.share);
+      $.bind($('#share', el), 'click', Post.share);
+      $.bind($('#queue', el), 'click', Post.pushComment);
+      Post.stats();
       $.add(d.body, el);
       return el;
     },
@@ -1450,12 +1458,13 @@
       return Post.stats();
     },
     pushComment: function() {
-      var comment;
-      if (!(comment = this.value)) {
+      var comment, ta;
+      ta = $('textarea', Post.el);
+      if (!(comment = ta.value)) {
         alert('Error: No text entered.');
         return;
       }
-      this.value = '';
+      ta.value = '';
       Post.comments.push(comment);
       return Post.stats();
     },
