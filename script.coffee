@@ -1184,11 +1184,10 @@ Post =
       fd = new FormData()
       for key, val of data
         fd.append key, val
-      $.ajax '', Post.sysCallback, 'post', fd
+      $.ajax 'post', Post.sysCallback, 'post', fd
 
   sysCallback: ->
     data = to: 'Post.message'
-    alert @responseText
     body = $.el 'body',
       innerHTML: @responseText
     if node = $('table font b', body)?.firstChild

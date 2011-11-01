@@ -1580,7 +1580,7 @@
           val = data[key];
           fd.append(key, val);
         }
-        return $.ajax('', Post.sysCallback, 'post', fd);
+        return $.ajax('post', Post.sysCallback, 'post', fd);
       });
     },
     sysCallback: function() {
