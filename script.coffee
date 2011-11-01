@@ -1072,8 +1072,7 @@ Post =
 
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
-    <div class=move>post</div>
-    <div id=stats></div>
+    <div class=move><span id=stats></span></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
     <div><input id=captcha placeholder=Verification></div>
@@ -1164,7 +1163,7 @@ Post =
       return
 
     post.to = 'sys'
-    postMessage data, '*'
+    postMessage post, '*'
 
   sys: ->
     $.globalEval ->
@@ -2638,12 +2637,11 @@ Main =
     ###
     $.globalEval ->
       window.addEventListener('message', (e) ->
-        alert 'globalMessage'
         {data} = e
         {to} = data
         delete to
         if to is 'sys'
-          d.getElementById('iframe').contentWindow.postMessage data
+          document.getElementById('iframe').contentWindow.postMessage data
       , false)
 
   message: (e) ->

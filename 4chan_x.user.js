@@ -1446,8 +1446,7 @@
     dialog: function() {
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
-    <div class=move>post</div>\
-    <div id=stats></div>\
+    <div class=move><span id=stats></span></div>\
     <ul id=items></ul>\
     <textarea name=com></textarea>\
     <div><input id=captcha placeholder=Verification></div>\
@@ -1551,7 +1550,7 @@
         return;
       }
       post.to = 'sys';
-      return postMessage(data, '*');
+      return postMessage(post, '*');
     },
     sys: function() {
       $.globalEval(function() {
@@ -3425,12 +3424,11 @@
           */      return $.globalEval(function() {
         return window.addEventListener('message', function(e) {
           var data, to;
-          alert('globalMessage');
           data = e.data;
           to = data.to;
           delete to;
           if (to === 'sys') {
-            return d.getElementById('iframe').contentWindow.postMessage(data);
+            return document.getElementById('iframe').contentWindow.postMessage(data);
           }
         }, false);
       });
