@@ -1039,8 +1039,8 @@ Post =
     Post.captchaImg()
 
   captchaImg: ->
-    c = Post.captcha.challenge
-    $('img', Post.el).src = "http://www.google.com/recaptcha/api/image?c=#{c}"
+    $('img', Post.el).src =
+      'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge
 
   node: (root) ->
     link = $ '.quotejs + a', root
@@ -1070,7 +1070,7 @@ Post =
     ta.focus()
 
   stats: ->
-    $('#stats', Post.el).textContent = "comments: #{Post.comments.length}, captchas: #{Post.captchas.length}"
+    $('#pstats', Post.el).textContent = "comments: #{Post.comments.length}, captchas: #{Post.captchas.length}"
 
   captchaKeydown: (e) ->
     kc = e.keyCode
@@ -1083,7 +1083,8 @@ Post =
 
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
-    <div class=move><span id=stats></span></div>
+    <div class=move><span id=pstats></span></div>
+    <div id=a></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
     <div><img></div>
@@ -1092,7 +1093,7 @@ Post =
     <button id=share>Share</button>
     '
     Post.captchaImg()
-    $.before $('#items', el), Post.file()
+    $.add $('#a', el), Post.file()
     $.bind $('#share', el), 'click', Post.share
     $.bind $('#queue', el), 'click', Post.pushComment
     $.bind $('#captcha', el), 'keydown', Post.captchaKeydown
@@ -1142,7 +1143,7 @@ Post =
       $.add $("#items", Post.el), item
 
     fr = new FileReader()
-    img = $ 'img', @parent
+    img = $ 'img', @parentNode
     fr.onload = (e) ->
       img.src = e.target.result
     fr.readAsDataURL file
@@ -1170,6 +1171,7 @@ Post =
       recaptcha_challenge_field: captcha.challenge
       recaptcha_response_field:  captcha.response
       com: Post.comments.shift()
+      email: 'sage'
       upfile: $ '#items input', el
     }
 
@@ -2944,6 +2946,10 @@ Main =
 
       #post {
         position: fixed;
+      }
+      #items img {
+        max-height: 100px;
+        max-width: 100px;
       }
     '
 

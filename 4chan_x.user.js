@@ -1412,9 +1412,7 @@
       return Post.captchaImg();
     },
     captchaImg: function() {
-      var c;
-      c = Post.captcha.challenge;
-      return $('img', Post.el).src = "http://www.google.com/recaptcha/api/image?c=" + c;
+      return $('img', Post.el).src = 'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge;
     },
     node: function(root) {
       var link;
@@ -1443,7 +1441,7 @@
       return ta.focus();
     },
     stats: function() {
-      return $('#stats', Post.el).textContent = "comments: " + Post.comments.length + ", captchas: " + Post.captchas.length;
+      return $('#pstats', Post.el).textContent = "comments: " + Post.comments.length + ", captchas: " + Post.captchas.length;
     },
     captchaKeydown: function(e) {
       var kc, v;
@@ -1460,7 +1458,8 @@
     dialog: function() {
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
-    <div class=move><span id=stats></span></div>\
+    <div class=move><span id=pstats></span></div>\
+    <div id=a></div>\
     <ul id=items></ul>\
     <textarea name=com></textarea>\
     <div><img></div>\
@@ -1469,7 +1468,7 @@
     <button id=share>Share</button>\
     ');
       Post.captchaImg();
-      $.before($('#items', el), Post.file());
+      $.add($('#a', el), Post.file());
       $.bind($('#share', el), 'click', Post.share);
       $.bind($('#queue', el), 'click', Post.pushComment);
       $.bind($('#captcha', el), 'keydown', Post.captchaKeydown);
@@ -1523,7 +1522,7 @@
         $.add($("#items", Post.el), item);
       }
       fr = new FileReader();
-      img = $('img', this.parent);
+      img = $('img', this.parentNode);
       fr.onload = function(e) {
         return img.src = e.target.result;
       };
@@ -3745,6 +3744,10 @@
 \
       #post {\
         position: fixed;\
+      }\
+      #items img {\
+        max-height: 100px;\
+        max-width: 100px;\
       }\
     '
   };
