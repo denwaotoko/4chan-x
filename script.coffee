@@ -1017,19 +1017,30 @@ options =
 
 Post =
   init: ->
+    holder = $ '#recaptcha_challenge_field_holder'
+    $.bind holder, 'DOMNodeInserted', Post.captchaNode
+    Post.captchaNode target: holder.firstChild
+
     $.add d.body, $.el 'iframe',
       id: 'iframe'
       src: "http://sys.4chan.org/#{g.BOARD}/src"
     Post.comments = []
     Post.captchas = []
-    Post.captcha =
-      time: Date.now()
-      challenge: $('#recaptcha_challenge_field').value
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
     if conf['Persistent QR']
       Post.dialog()
+
+  captchaNode: (e) ->
+    Post.captcha =
+      challenge: e.target.value
+      time: Date.now()
+    Post.captchaImg()
+
+  captchaImg: ->
+    c = Post.captcha.challenge
+    $('img', Post.el).src = "http://www.google.com/recaptcha/api/image?c=#{c}"
 
   node: (root) ->
     link = $ '.quotejs + a', root
@@ -1075,11 +1086,13 @@ Post =
     <div class=move><span id=stats></span></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
+    <div><img></div>
     <div><input id=captcha placeholder=Verification></div>
     <button id=queue>Queue</button>
     <button id=share>Share</button>
     '
-    $.add el, Post.file()
+    Post.captchaImg()
+    $.before $('#items', el), Post.file()
     $.bind $('#share', el), 'click', Post.share
     $.bind $('#queue', el), 'click', Post.pushComment
     $.bind $('#captcha', el), 'keydown', Post.captchaKeydown
