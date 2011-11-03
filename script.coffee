@@ -1039,7 +1039,7 @@ Post =
     Post.captchaImg()
 
   captchaImg: ->
-    $('img', Post.el).src =
+    $('#captchaImg', Post.el)?.src =
       'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge
 
   node: (root) ->
@@ -1087,7 +1087,7 @@ Post =
     <div id=a></div>
     <ul id=items></ul>
     <textarea name=com></textarea>
-    <div><img></div>
+    <div><img id=captchaImg></div>
     <div><input id=captcha placeholder=Verification></div>
     <button id=queue>Queue</button>
     <button id=share>Share</button>
@@ -1165,6 +1165,8 @@ Post =
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
+    if b64 = $('#items img', el)?.src.split(',')[1]
+      upfile = atob b64
     return {
       mode: 'regist'
       resto: g.THREAD_ID or ''
@@ -1172,7 +1174,7 @@ Post =
       recaptcha_response_field:  captcha.response
       com: Post.comments.shift()
       email: 'sage'
-      upfile: $ '#items input', el
+      upfile: upfile
     }
 
   share: ->
@@ -1197,6 +1199,15 @@ Post =
       return unless to is 'sys'
       delete data.to
       fd = new FormData()
+      {upfile} = data
+      if upfile
+        l = upfile.length
+        ui8a = new Uint8Array l
+        for i in  [0...l]
+          ui8a[i] = upfile.charCodeAt i
+        bb = new (window.MozBlobBuilder or window.WebKitBlobBuilder)()
+        bb.append ui8a.buffer
+        data.upfile = bb.getBlob()
       for key, val of data
         fd.append key, val
       $.ajax 'post', Post.sysCallback, 'post', fd

@@ -1412,7 +1412,8 @@
       return Post.captchaImg();
     },
     captchaImg: function() {
-      return $('img', Post.el).src = 'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge;
+      var _ref;
+      return (_ref = $('#captchaImg', Post.el)) != null ? _ref.src = 'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge : void 0;
     },
     node: function(root) {
       var link;
@@ -1462,7 +1463,7 @@
     <div id=a></div>\
     <ul id=items></ul>\
     <textarea name=com></textarea>\
-    <div><img></div>\
+    <div><img id=captchaImg></div>\
     <div><input id=captcha placeholder=Verification></div>\
     <button id=queue>Queue</button>\
     <button id=share>Share</button>\
@@ -1539,7 +1540,7 @@
       return input;
     },
     getPost: function() {
-      var captcha, el, _ref;
+      var b64, captcha, el, upfile, _ref, _ref2;
       el = Post.el;
       if (!Post.captchas.length) {
         return {
@@ -1552,13 +1553,17 @@
         };
       }
       captcha = Post.captchas.shift();
+      if (b64 = (_ref2 = $('#items img', el)) != null ? _ref2.src.split(',')[1] : void 0) {
+        upfile = atob(b64);
+      }
       return {
         mode: 'regist',
         resto: g.THREAD_ID || '',
         recaptcha_challenge_field: captcha.challenge,
         recaptcha_response_field: captcha.response,
         com: Post.comments.shift(),
-        upfile: $('#items input', el)
+        email: 'sage',
+        upfile: upfile
       };
     },
     share: function() {
@@ -1583,7 +1588,7 @@
         }, false);
       });
       return $.bind(window, 'message', function(e) {
-        var data, fd, key, to, val;
+        var bb, data, fd, i, key, l, to, ui8a, upfile, val;
         data = e.data;
         to = data.to;
         if (to !== 'sys') {
@@ -1591,6 +1596,17 @@
         }
         delete data.to;
         fd = new FormData();
+        upfile = data.upfile;
+        if (upfile) {
+          l = upfile.length;
+          ui8a = new Uint8Array(l);
+          for (i = 0; 0 <= l ? i < l : i > l; 0 <= l ? i++ : i--) {
+            ui8a[i] = upfile.charCodeAt(i);
+          }
+          bb = new (window.MozBlobBuilder || window.WebKitBlobBuilder)();
+          bb.append(ui8a.buffer);
+          data.upfile = bb.getBlob();
+        }
         for (key in data) {
           val = data[key];
           fd.append(key, val);
