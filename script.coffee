@@ -303,7 +303,7 @@ $.extend $,
 
       #during second sunday
       if sunday < 15 and date.getDay() is 0
-        if date.getHour() < 1
+        if date.getHours() < 1
           return false
         return true
 
@@ -317,7 +317,7 @@ $.extend $,
 
     # during first sunday
     if sunday < 8 and date.getDay() is 0
-      if date.getHour() < 1
+      if date.getHours() < 1
         return true
       return false
 

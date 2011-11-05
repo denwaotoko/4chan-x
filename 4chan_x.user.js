@@ -434,7 +434,7 @@
           return false;
         }
         if (sunday < 15 && date.getDay() === 0) {
-          if (date.getHour() < 1) {
+          if (date.getHours() < 1) {
             return false;
           }
           return true;
@@ -445,7 +445,7 @@
         return true;
       }
       if (sunday < 8 && date.getDay() === 0) {
-        if (date.getHour() < 1) {
+        if (date.getHours() < 1) {
           return true;
         }
         return false;
