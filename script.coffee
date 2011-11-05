@@ -112,7 +112,7 @@ conf = {}
 ) null, config
 
 NAMESPACE = 'AEOS.4chan_x.'
-VERSION = '2.20.2'
+VERSION = '2.20.3'
 SECOND = 1000
 MINUTE = 60*SECOND
 HOUR   = 60*MINUTE

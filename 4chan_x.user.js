@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           4chan x
-// @version        2.20.2
+// @version        2.20.3
 // @namespace      aeosynth
 // @description    Adds various features.
 // @copyright      2009-2011 James Campos <james.r.campos@gmail.com>
@@ -15,7 +15,7 @@
  *
  * Copyright (c) 2009-2011 James Campos <james.r.campos@gmail.com>
  * http://aeosynth.github.com/4chan-x/
- * 4chan x 2.20.2
+ * 4chan x 2.20.3
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -191,7 +191,7 @@
     }
   })(null, config);
   NAMESPACE = 'AEOS.4chan_x.';
-  VERSION = '2.20.2';
+  VERSION = '2.20.3';
   SECOND = 1000;
   MINUTE = 60 * SECOND;
   HOUR = 60 * MINUTE;
