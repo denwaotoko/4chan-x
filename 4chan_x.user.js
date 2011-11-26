@@ -63,6 +63,7 @@
 (function() {
   var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
+
   config = {
     main: {
       Enhancing: {
@@ -161,11 +162,13 @@
       'Interval': 30
     }
   };
+
   if (typeof console !== "undefined" && console !== null) {
     log = function(arg) {
       return console.log(arg);
     };
   }
+
   if (!Object.keys) {
     Object.keys = function(o) {
       var key, _results;
@@ -176,7 +179,9 @@
       return _results;
     };
   }
+
   conf = {};
+
   (flatten = function(parent, obj) {
     var key, val, _results;
     if (obj.length) {
@@ -196,15 +201,23 @@
       return conf[parent] = obj;
     }
   })(null, config);
+
   NAMESPACE = 'AEOS.4chan_x.';
+
   SECOND = 1000;
+
   MINUTE = 60 * SECOND;
+
   HOUR = 60 * MINUTE;
+
   DAY = 24 * HOUR;
+
   d = document;
+
   g = {
     callbacks: []
   };
+
   ui = {
     dialog: function(id, position, html) {
       var el, saved, _ref;
@@ -272,17 +285,18 @@
       return ui.el.parentNode.removeChild(ui.el);
     }
   };
+
   /*
   loosely follows the jquery api:
   http://api.jquery.com/
   not chainable
   */
+
   $ = function(selector, root) {
-    if (root == null) {
-      root = d.body;
-    }
+    if (root == null) root = d.body;
     return root.querySelector(selector);
   };
+
   $.extend = function(object, properties) {
     var key, val;
     for (key in properties) {
@@ -291,6 +305,7 @@
     }
     return object;
   };
+
   $.extend($, {
     id: function(id) {
       return d.getElementById(id);
@@ -305,9 +320,7 @@
     },
     ajax: function(url, cb, type, data) {
       var r;
-      if (type == null) {
-        type = 'get';
-      }
+      if (type == null) type = 'get';
       r = new XMLHttpRequest();
       r.onload = cb;
       r.open(type, url, true);
@@ -356,9 +369,7 @@
       return style;
     },
     x: function(path, root) {
-      if (root == null) {
-        root = d.body;
-      }
+      if (root == null) root = d.body;
       return d.evaluate(path, root, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
     },
     tn: function(s) {
@@ -398,9 +409,7 @@
     el: function(tag, properties) {
       var el;
       el = d.createElement(tag);
-      if (properties) {
-        $.extend(el, properties);
-      }
+      if (properties) $.extend(el, properties);
       return el;
     },
     bind: function(el, eventType, handler) {
@@ -415,42 +424,32 @@
              Since 2007, daylight saving time starts on the second Sunday of March
              and ends on the first Sunday of November, with all time changes taking
              place at 2:00 AM (0200) local time.
-          */
+      */
       var date, month, sunday;
       date = new Date();
       month = date.getMonth();
-      if (month < 2 || 10 < month) {
-        return false;
-      }
-      if ((2 < month && month < 10)) {
-        return true;
-      }
+      if (month < 2 || 10 < month) return false;
+      if ((2 < month && month < 10)) return true;
       sunday = date.getDate() - date.getDay();
       if (month === 2) {
-        if (sunday < 8) {
-          return false;
-        }
+        if (sunday < 8) return false;
         if (sunday < 15 && date.getDay() === 0) {
-          if (date.getHour() < 1) {
-            return false;
-          }
+          if (date.getHour() < 1) return false;
           return true;
         }
         return true;
       }
-      if (sunday < 1) {
-        return true;
-      }
+      if (sunday < 1) return true;
       if (sunday < 8 && date.getDay() === 0) {
-        if (date.getHour() < 1) {
-          return true;
-        }
+        if (date.getHour() < 1) return true;
         return false;
       }
       return false;
     }
   });
+
   $.cache.requests = {};
+
   if (typeof GM_deleteValue !== "undefined" && GM_deleteValue !== null) {
     $.extend($, {
       "delete": function(name) {
@@ -499,25 +498,24 @@
       }
     });
   }
+
   for (key in conf) {
     val = conf[key];
     conf[key] = $.get(key, val);
   }
+
   $$ = function(selector, root) {
-    if (root == null) {
-      root = d.body;
-    }
+    if (root == null) root = d.body;
     return Array.prototype.slice.call(root.querySelectorAll(selector));
   };
+
   filter = {
     regexps: {},
     callbacks: [],
     init: function() {
       var f, filter, key, m, _i, _len;
       for (key in config.filter) {
-        if (!(m = conf[key].match(/^\/.+\/\w*$/gm))) {
-          continue;
-        }
+        if (!(m = conf[key].match(/^\/.+\/\w*$/gm))) continue;
         this.regexps[key] = [];
         for (_i = 0, _len = m.length; _i < _len; _i++) {
           filter = m[_i];
@@ -561,9 +559,7 @@
     },
     mail: function(root) {
       var mail;
-      if (mail = $('.linkmail', root)) {
-        return filter.test('mail', mail.href);
-      }
+      if (mail = $('.linkmail', root)) return filter.test('mail', mail.href);
     },
     sub: function(root) {
       var sub;
@@ -577,9 +573,7 @@
     },
     file: function(root) {
       var file;
-      if (file = $('.filesize span', root)) {
-        return filter.test('file', file.title);
-      }
+      if (file = $('.filesize span', root)) return filter.test('file', file.title);
     },
     md5: function(root) {
       var img;
@@ -588,23 +582,31 @@
       }
     }
   };
+
   strikethroughQuotes = {
     init: function() {
       return g.callbacks.push(function(root) {
         var el, quote, _i, _len, _ref, _results;
-        if (root.className === 'inline') {
-          return;
-        }
+        if (root.className === 'inline') return;
         _ref = $$('.quotelink', root);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           quote = _ref[_i];
-          _results.push((el = $.id(quote.hash.slice(1))) ? el.parentNode.parentNode.parentNode.hidden ? $.addClass(quote, 'filtered') : void 0 : void 0);
+          if (el = $.id(quote.hash.slice(1))) {
+            if (el.parentNode.parentNode.parentNode.hidden) {
+              _results.push($.addClass(quote, 'filtered'));
+            } else {
+              _results.push(void 0);
+            }
+          } else {
+            _results.push(void 0);
+          }
         }
         return _results;
       });
     }
   };
+
   expandComment = {
     init: function() {
       var a, _i, _len, _ref, _results;
@@ -654,21 +656,18 @@
         if (quote.getAttribute('href') === quote.hash) {
           quote.pathname = "/" + g.BOARD + "/res/" + threadID;
         }
-        if (quote.hash.slice(1) === threadID) {
-          quote.innerHTML += '&nbsp;(OP)';
-        }
+        if (quote.hash.slice(1) === threadID) quote.innerHTML += '&nbsp;(OP)';
         if (conf['Quote Preview']) {
           $.bind(quote, 'mouseover', quotePreview.mouseover);
           $.bind(quote, 'mousemove', ui.hover);
           $.bind(quote, 'mouseout', quotePreview.mouseout);
         }
-        if (conf['Quote Inline']) {
-          $.bind(quote, 'click', quoteInline.toggle);
-        }
+        if (conf['Quote Inline']) $.bind(quote, 'click', quoteInline.toggle);
       }
       return $.replace(a.parentNode.parentNode, bq);
     }
   };
+
   expandThread = {
     init: function() {
       var a, span, _i, _len, _ref, _results;
@@ -699,9 +698,7 @@
       a = $('.omittedposts', thread);
       switch (a.textContent[0]) {
         case '+':
-          if ((_ref = $('.op .container', thread)) != null) {
-            _ref.innerHTML = '';
-          }
+          if ((_ref = $('.op .container', thread)) != null) _ref.innerHTML = '';
           a.textContent = a.textContent.replace('+', 'X Loading...');
           return $.cache(pathname, (function() {
             return expandThread.parse(this, pathname, thread, a);
@@ -729,7 +726,11 @@
           _results = [];
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
             backlink = _ref2[_i];
-            _results.push(!$.id(backlink.hash.slice(1)) ? $.rm(backlink) : void 0);
+            if (!$.id(backlink.hash.slice(1))) {
+              _results.push($.rm(backlink));
+            } else {
+              _results.push(void 0);
+            }
           }
           return _results;
       }
@@ -775,13 +776,12 @@
       return _results;
     }
   };
+
   replyHiding = {
     init: function() {
       return g.callbacks.push(function(root) {
         var a, dd, id, reply;
-        if (!(dd = $('.doubledash', root))) {
-          return;
-        }
+        if (!(dd = $('.doubledash', root))) return;
         dd.className = 'replyhider';
         a = $.el('a', {
           textContent: '[ - ]'
@@ -790,9 +790,7 @@
         $.replace(dd.firstChild, a);
         reply = dd.nextSibling;
         id = reply.id;
-        if (id in g.hiddenReplies) {
-          return replyHiding.hide(reply);
-        }
+        if (id in g.hiddenReplies) return replyHiding.hide(reply);
       });
     },
     cb: {
@@ -852,6 +850,7 @@
       return $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
     }
   };
+
   keybinds = {
     init: function() {
       var node, _i, _len, _ref;
@@ -868,9 +867,7 @@
       if (((_ref = e.target.nodeName) === 'TEXTAREA' || _ref === 'INPUT') && !e.altKey && !e.ctrlKey && !(e.keyCode === 27)) {
         return;
       }
-      if (!(key = keybinds.keyCode(e))) {
-        return;
-      }
+      if (!(key = keybinds.keyCode(e))) return;
       thread = nav.getThread();
       switch (key) {
         case conf.close:
@@ -882,9 +879,7 @@
           break;
         case conf.spoiler:
           ta = e.target;
-          if (ta.nodeName !== 'TEXTAREA') {
-            return;
-          }
+          if (ta.nodeName !== 'TEXTAREA') return;
           value = ta.value;
           selStart = ta.selectionStart;
           selEnd = ta.selectionEnd;
@@ -941,14 +936,10 @@
           threadHiding.toggle(thread);
           break;
         case conf.nextPage:
-          if ((_ref2 = $('input[value=Next]')) != null) {
-            _ref2.click();
-          }
+          if ((_ref2 = $('input[value=Next]')) != null) _ref2.click();
           break;
         case conf.previousPage:
-          if ((_ref3 = $('input[value=Previous]')) != null) {
-            _ref3.click();
-          }
+          if ((_ref3 = $('input[value=Previous]')) != null) _ref3.click();
           break;
         case conf.submit:
           if (QR.qr) {
@@ -1031,12 +1022,8 @@
         }
       })();
       if (key) {
-        if (e.altKey) {
-          key = 'alt+' + key;
-        }
-        if (e.ctrlKey) {
-          key = 'ctrl+' + key;
-        }
+        if (e.altKey) key = 'alt+' + key;
+        if (e.ctrlKey) key = 'ctrl+' + key;
       }
       return key;
     },
@@ -1079,9 +1066,7 @@
           rect = td.getBoundingClientRect();
           if (rect.top > 0 && rect.bottom < d.body.clientHeight) {
             next = $.x('following::td[@class="reply"]', td);
-            if ($.x('ancestor::div[@class="thread"]', next) !== thread) {
-              return;
-            }
+            if ($.x('ancestor::div[@class="thread"]', next) !== thread) return;
             rect = next.getBoundingClientRect();
             if (rect.top > 0 && rect.bottom < d.body.clientHeight) {
               next.className = 'replyhl';
@@ -1127,6 +1112,7 @@
       }
     }
   };
+
   nav = {
     init: function() {
       var next, prev, span;
@@ -1160,9 +1146,7 @@
         rect = thread.getBoundingClientRect();
         bottom = rect.bottom;
         if (bottom > 0) {
-          if (full) {
-            return [thread, i, rect];
-          }
+          if (full) return [thread, i, rect];
           return thread;
         }
       }
@@ -1203,6 +1187,7 @@
       return window.scrollBy(0, top);
     }
   };
+
   options = {
     init: function() {
       var a, home;
@@ -1364,9 +1349,7 @@
     keybind: function(e) {
       e.preventDefault();
       e.stopPropagation();
-      if ((key = keybinds.keyCode(e)) == null) {
-        return;
-      }
+      if ((key = keybinds.keyCode(e)) == null) return;
       this.value = key;
       $.set(this.name, key);
       return conf[this.name] = key;
@@ -1384,6 +1367,7 @@
       return $('#backlinkPreview').textContent = conf['backlink'].replace(/%id/, '123456789');
     }
   };
+
   Post = {
     init: function() {
       var holder;
@@ -1400,9 +1384,7 @@
       Post.captchas = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
-      if (conf['Persistent QR']) {
-        return Post.dialog();
-      }
+      if (conf['Persistent QR']) return Post.dialog();
     },
     captchaNode: function(e) {
       Post.captcha = {
@@ -1429,9 +1411,7 @@
       selection = getSelection();
       root = $.x('ancestor::td', selection.anchorNode);
       if (id === ((_ref = $('input', root)) != null ? _ref.name : void 0)) {
-        if (s = selection.toString().replace(/\n/g, '\n>')) {
-          text += ">" + s + "\n";
-        }
+        if (s = selection.toString().replace(/\n/g, '\n>')) text += ">" + s + "\n";
       }
       ta = $('textarea', el);
       v = ta.value;
@@ -1452,9 +1432,7 @@
         Post.captchaReload();
         return;
       }
-      if (e.keyCode === 13) {
-        return Post.pushCaptcha.call(this);
-      }
+      if (e.keyCode === 13) return Post.pushCaptcha.call(this);
     },
     dialog: function() {
       var el;
@@ -1581,9 +1559,7 @@
         return window.addEventListener('message', function(e) {
           var data;
           data = e.data;
-          if (data.to !== 'Post.message') {
-            return;
-          }
+          if (data.to !== 'Post.message') return;
           return parent.postMessage(data, '*');
         }, false);
       });
@@ -1591,9 +1567,7 @@
         var bb, data, fd, i, key, l, to, ui8a, upfile, val;
         data = e.data;
         to = data.to;
-        if (to !== 'sys') {
-          return;
-        }
+        if (to !== 'sys') return;
         delete data.to;
         fd = new FormData();
         upfile = data.upfile;
@@ -1634,9 +1608,7 @@
         alert(error);
         return;
       }
-      if (conf['Cooldown']) {
-        return Post.cooldown();
-      }
+      if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {
       var button, el, n;
@@ -1652,18 +1624,15 @@
       } else {
         button.disabled = false;
         button.textContent = 'Submit';
-        if (Post.posts.length && $("#autopost", el).checked) {
-          return Post.post();
-        }
+        if (Post.posts.length && $("#autopost", el).checked) return Post.post();
       }
     }
   };
+
   QR = {
     init: function() {
       var holder;
-      if (!($('form[name=post]') && $('#recaptcha_response_field'))) {
-        return;
-      }
+      if (!($('form[name=post]') && $('#recaptcha_response_field'))) return;
       g.callbacks.push(function(root) {
         var quote;
         quote = $('.quotejs + a', root);
@@ -1694,9 +1663,7 @@
       if (conf['Persistent QR']) {
         QR.dialog();
         $('textarea', QR.qr).blur();
-        if (conf['Auto Hide QR']) {
-          $('#autohide', QR.qr).checked = true;
-        }
+        if (conf['Auto Hide QR']) $('#autohide', QR.qr).checked = true;
       }
       if (conf['Cooldown']) {
         return $.bind(window, 'storage', function(e) {
@@ -1732,9 +1699,7 @@
     captchaImg: function() {
       var c, qr;
       qr = QR.qr;
-      if (!qr) {
-        return;
-      }
+      if (!qr) return;
       c = QR.captcha.challenge;
       return $('#captcha img', qr).src = "http://www.google.com/recaptcha/api/image?c=" + c;
     },
@@ -1754,9 +1719,7 @@
       captchas = $.get('captchas', []);
       cutoff = Date.now() - 5 * HOUR + 5 * MINUTE;
       while (captcha = captchas.shift()) {
-        if (captcha.time > cutoff) {
-          break;
-        }
+        if (captcha.time > cutoff) break;
       }
       $.set('captchas', captchas);
       QR.stats(captchas);
@@ -1780,9 +1743,7 @@
         QR.foo(this);
         return;
       }
-      if (this.parentNode.className === 'wat') {
-        QR.attach(this);
-      }
+      if (this.parentNode.className === 'wat') QR.attach(this);
       fr = new FileReader();
       img = $('img', this.parentNode);
       fr.onload = function(e) {
@@ -1796,9 +1757,7 @@
     },
     cooldown: function() {
       var b, cooldown, n, now;
-      if (!(g.REPLY && QR.qr)) {
-        return;
-      }
+      if (!(g.REPLY && QR.qr)) return;
       cooldown = $.get("cooldown/" + g.BOARD, 0);
       now = Date.now();
       n = Math.ceil((cooldown - now) / 1000);
@@ -1814,9 +1773,7 @@
           textContent: 'Submit',
           disabled: false
         });
-        if ($('#autopost', QR.qr).checked) {
-          return QR.submit();
-        }
+        if ($('#autopost', QR.qr).checked) return QR.submit();
       }
     },
     foo: function(old) {
@@ -1835,15 +1792,11 @@
     },
     dialog: function(text, tid) {
       var l, qr, ta;
-      if (text == null) {
-        text = '';
-      }
+      if (text == null) text = '';
       tid || (tid = g.THREAD_ID || '');
       QR.qr = qr = ui.dialog('qr', 'top: 0; right: 0;', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=qr_stats></span>    </div>    <div class=autohide>      <span class=wat><img src=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41Ljg3O4BdAAAAXUlEQVQ4T2NgoAH4DzQTHyZoJckGENJASB6nc9GdCjdo6tSptkCsCPUqVgNAmtFtxiYGUkO0QrBibOqJtWkIGYDTqTgSGOnRiGYQ3mRLKBFhjUZiNCGrIZg3aKsAAGu4rTMFLFBMAAAAAElFTkSuQmCC></span>      <input form=qr_form placeholder=Name name=name>      <input form=qr_form placeholder=Email name=email>      <input form=qr_form placeholder=Subject name=sub>      <ul id=files></ul>      <form enctype=multipart/form-data method=post action=http://sys.4chan.org/" + g.BOARD + "/post target=iframe id=qr_form>        <textarea placeholder=Comment name=com></textarea>        <div hidden>          <input name=pwd>          <input name=mode value=regist>          <input name=recaptcha_challenge_field id=challenge>          <input name=recaptcha_response_field id=response>        </div>        <div id=captcha>          <div><img></div>          <input id=recaptcha_response_field autocomplete=off>        </div>        <div>          <button>Submit</button>          " + (g.REPLY ? "<label>[<input type=checkbox id=autopost title=autopost> Autopost]</label>" : '') + "          <input form=qr_form placeholder=Thread name=resto value=" + tid + " " + (g.REPLY ? 'hidden' : '') + ">          " + QR.spoiler + "        </div>      </form>    </div>    <a class=error></a>    ");
       QR.reset();
-      if (conf['Cooldown']) {
-        QR.cooldown();
-      }
+      if (conf['Cooldown']) QR.cooldown();
       QR.foo();
       $.bind($('.close', qr), 'click', QR.close);
       $.bind($('form', qr), 'submit', QR.submit);
@@ -1865,27 +1818,21 @@
         QR.captchaReload();
         return;
       }
-      if (!(e.keyCode === 13 && v)) {
-        return;
-      }
+      if (!(e.keyCode === 13 && v)) return;
       QR.captchaPush(this);
       e.preventDefault();
       return QR.submit();
     },
     quote: function(e, blank) {
       var bq, i, id, qr, s, sel, ss, ta, text, tid, v, _base, _ref, _ref2;
-      if (e != null) {
-        e.preventDefault();
-      }
+      if (e != null) e.preventDefault();
       tid = (_ref = $.x('ancestor::div[@class="thread"]/div', this)) != null ? _ref.id : void 0;
       id = this.textContent;
       text = ">>" + id + "\n";
       sel = getSelection();
       bq = $.x('ancestor::blockquote', sel.anchorNode);
       if (id === ((_ref2 = $.x('preceding-sibling::input', bq)) != null ? _ref2.name : void 0)) {
-        if (s = sel.toString().replace(/\n/g, '\n>')) {
-          text += ">" + s + "\n";
-        }
+        if (s = sel.toString().replace(/\n/g, '\n>')) text += ">" + s + "\n";
       }
       qr = QR.qr;
       if (!qr) {
@@ -1916,9 +1863,7 @@
       if (textContent) {
         $.extend($('a.error', qr), data);
         if (textContent === 'Error: Duplicate file entry detected.') {
-          if (row) {
-            $.rm(row);
-          }
+          if (row) $.rm(row);
           QR.stats();
           setTimeout(QR.submit, 1000);
         } else if (textContent === 'You seem to have mistyped the verification.') {
@@ -1926,9 +1871,7 @@
         }
         return;
       }
-      if (row) {
-        $.rm(row);
-      }
+      if (row) $.rm(row);
       QR.stats();
       if (conf['Persistent QR'] || ((_ref2 = $('#files input', qr)) != null ? _ref2.files.length : void 0)) {
         QR.reset();
@@ -1950,9 +1893,7 @@
       $('[name=pwd]', qr).value = (m = c.match(/4chan_pass=([^;]+)/)) ? decodeURIComponent(m[1]) : $('input[name=pwd]').value;
       $('[name=sub]', qr).value = '';
       if (!conf['Remember Spoiler']) {
-        if ((_ref = $('[name=spoiler]', qr)) != null) {
-          _ref.checked = false;
-        }
+        if ((_ref = $('[name=spoiler]', qr)) != null) _ref.checked = false;
       }
       return $('textarea', qr).value = '';
     },
@@ -1972,34 +1913,22 @@
         return;
       }
       $('.error', qr).textContent = '';
-      if (e && (el = $('#recaptcha_response_field', qr)).value) {
-        QR.captchaPush(el);
-      }
+      if (e && (el = $('#recaptcha_response_field', qr)).value) QR.captchaPush(el);
       if (!(captcha = QR.captchaShift())) {
         alert('You forgot to type in the verification.');
-        if (e != null) {
-          e.preventDefault();
-        }
+        if (e != null) e.preventDefault();
         return;
       }
       challenge = captcha.challenge, response = captcha.response;
       $('#challenge', qr).value = challenge;
       $('#response', qr).value = response;
-      if (conf['Auto Hide QR']) {
-        $('#autohide', qr).checked = true;
-      }
-      if (input = $('#files input', qr)) {
-        input.setAttribute('form', 'qr_form');
-      }
-      if (!e) {
-        $('#qr_form', qr).submit();
-      }
+      if (conf['Auto Hide QR']) $('#autohide', qr).checked = true;
+      if (input = $('#files input', qr)) input.setAttribute('form', 'qr_form');
+      if (!e) $('#qr_form', qr).submit();
       QR.sage = /sage/i.test($('[name=email]', qr).value);
       id = $('input[name=resto]', qr).value;
       QR.op = !id;
-      if (QR.op) {
-        $('[name=email]', qr).value = 'noko';
-      }
+      if (QR.op) $('[name=email]', qr).value = 'noko';
       if (conf['Thread Watcher'] && conf['Auto Watch Reply']) {
         op = $.id(id);
         if ($('img.favicon', op).src === Favicon.empty) {
@@ -2020,7 +1949,7 @@
       
           To access the parent, we have to break out of the sandbox and evaluate
           in the global context.
-          */
+      */
       return $.globalEval(function() {
         var data, href, node, textContent, _ref;
         $ = function(css) {
@@ -2040,6 +1969,7 @@
       });
     }
   };
+
   threading = {
     init: function() {
       return threading.thread($('body > form').firstChild);
@@ -2061,9 +1991,7 @@
     thread: function(node) {
       var div;
       node = threading.op(node);
-      if (g.REPLY) {
-        return;
-      }
+      if (g.REPLY) return;
       div = $.el('div', {
         className: 'thread'
       });
@@ -2078,6 +2006,7 @@
       }
     }
   };
+
   threadHiding = {
     init: function() {
       var a, hiddenThreads, op, thread, _i, _len, _ref, _results;
@@ -2092,7 +2021,11 @@
         });
         $.bind(a, 'click', threadHiding.cb.hide);
         $.prepend(op, a);
-        _results.push(op.id in hiddenThreads ? threadHiding.hideHide(thread) : void 0);
+        if (op.id in hiddenThreads) {
+          _results.push(threadHiding.hideHide(thread));
+        } else {
+          _results.push(void 0);
+        }
       }
       return _results;
     },
@@ -2162,12 +2095,11 @@
       return $.set("hiddenThreads/" + g.BOARD + "/", hiddenThreads);
     }
   };
+
   updater = {
     init: function() {
       var checkbox, checked, dialog, html, input, name, title, _i, _len, _ref;
-      if (!$('form[name=post]')) {
-        return;
-      }
+      if (!$('form[name=post]')) return;
       if (conf['Scrolling']) {
         if (conf['Scroll BG']) {
           updater.focus = true;
@@ -2284,9 +2216,7 @@
         while (reply = arr.pop()) {
           $.before(updater.br, reply);
         }
-        if (scroll) {
-          return scrollTo(0, d.body.scrollHeight);
-        }
+        if (scroll) return scrollTo(0, d.body.scrollHeight);
       }
     },
     timeout: function() {
@@ -2309,14 +2239,13 @@
     update: function() {
       var cb, url, _ref;
       updater.timer.textContent = 0;
-      if ((_ref = updater.request) != null) {
-        _ref.abort();
-      }
+      if ((_ref = updater.request) != null) _ref.abort();
       url = location.pathname + '?' + Date.now();
       cb = updater.cb.update;
       return updater.request = $.ajax(url, cb);
     }
   };
+
   watcher = {
     init: function() {
       var favicon, html, input, inputs, _i, _len;
@@ -2334,9 +2263,7 @@
       }
       watcher.refresh();
       return $.bind(window, 'storage', function(e) {
-        if (e.key === ("" + NAMESPACE + "watched")) {
-          return watcher.refresh();
-        }
+        if (e.key === ("" + NAMESPACE + "watched")) return watcher.refresh();
       });
     },
     refresh: function() {
@@ -2367,7 +2294,11 @@
       for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
         favicon = _ref3[_j];
         id = favicon.nextSibling.name;
-        _results.push(id in watchedBoard ? favicon.src = Favicon["default"] : favicon.src = Favicon.empty);
+        if (id in watchedBoard) {
+          _results.push(favicon.src = Favicon["default"]);
+        } else {
+          _results.push(favicon.src = Favicon.empty);
+        }
       }
       return _results;
     },
@@ -2411,6 +2342,7 @@
       return watcher.refresh();
     }
   };
+
   anonymize = {
     init: function() {
       return g.callbacks.push(function(root) {
@@ -2427,6 +2359,7 @@
       });
     }
   };
+
   sauce = {
     init: function() {
       sauce.prefixes = conf['flavors'].match(/^[^#].+$/gm);
@@ -2435,9 +2368,7 @@
       });
       return g.callbacks.push(function(root) {
         var i, link, prefix, span, suffix, _len, _ref, _results;
-        if (root.className === 'inline' || !(span = $('.filesize', root))) {
-          return;
-        }
+        if (root.className === 'inline' || !(span = $('.filesize', root))) return;
         suffix = $('a', span).href;
         _ref = sauce.prefixes;
         _results = [];
@@ -2454,6 +2385,7 @@
       });
     }
   };
+
   revealSpoilers = {
     init: function() {
       return g.callbacks.push(function(root) {
@@ -2468,14 +2400,13 @@
       });
     }
   };
+
   Time = {
     init: function() {
       var chanOffset;
       Time.foo();
       chanOffset = 5 - new Date().getTimezoneOffset() / 60;
-      if ($.isDST()) {
-        chanOffset--;
-      }
+      if ($.isDST()) chanOffset--;
       this.parse = Date.parse('10/11/11(Tue)18:53') ? function(node) {
         return new Date(Date.parse(node.textContent) + chanOffset * HOUR);
       } : function(node) {
@@ -2490,9 +2421,7 @@
     },
     node: function(root) {
       var node, posttime, time;
-      if (root.className === 'inline') {
-        return;
-      }
+      if (root.className === 'inline') return;
       node = (posttime = $('.posttime', root)) ? posttime : $('span[id]', root).previousSibling;
       Time.date = Time.parse(node);
       time = $.el('time', {
@@ -2576,25 +2505,26 @@
       }
     }
   };
+
   getTitle = function(thread) {
     var el, span;
     el = $('.filetitle', thread);
     if (!el.textContent) {
       el = $('blockquote', thread);
-      if (!el.textContent) {
-        el = $('.postername', thread);
-      }
+      if (!el.textContent) el = $('.postername', thread);
     }
     span = $.el('span', {
       innerHTML: el.innerHTML.replace(/<br>/g, ' ')
     });
     return "/" + g.BOARD + "/ - " + span.textContent;
   };
+
   titlePost = {
     init: function() {
       return d.title = getTitle();
     }
   };
+
   quoteBacklink = {
     init: function() {
       var format;
@@ -2602,16 +2532,12 @@
       quoteBacklink.funk = Function('id', "return'" + format + "'");
       return g.callbacks.push(function(root) {
         var a, container, el, id, link, qid, quote, quotes, _i, _len, _ref, _results;
-        if (root.classList.contains('inline')) {
-          return;
-        }
+        if (root.classList.contains('inline')) return;
         quotes = {};
         _ref = $$('.quotelink', root);
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           quote = _ref[_i];
-          if (!(qid = quote.hash.slice(1))) {
-            continue;
-          }
+          if (!(qid = quote.hash.slice(1))) continue;
           quotes[qid] = quote;
         }
         id = $('input', root).name;
@@ -2622,21 +2548,15 @@
         });
         _results = [];
         for (qid in quotes) {
-          if (!(el = $.id(qid))) {
-            continue;
-          }
-          if (el.className === 'op' && !conf['OP Backlinks']) {
-            continue;
-          }
+          if (!(el = $.id(qid))) continue;
+          if (el.className === 'op' && !conf['OP Backlinks']) continue;
           link = a.cloneNode(true);
           if (conf['Quote Preview']) {
             $.bind(link, 'mouseover', quotePreview.mouseover);
             $.bind(link, 'mousemove', ui.hover);
             $.bind(link, 'mouseout', quotePreview.mouseout);
           }
-          if (conf['Quote Inline']) {
-            $.bind(link, 'click', quoteInline.toggle);
-          }
+          if (conf['Quote Inline']) $.bind(link, 'click', quoteInline.toggle);
           if (!((container = $('.container', el)) && container.parentNode === el)) {
             container = $.el('span', {
               className: 'container'
@@ -2650,6 +2570,7 @@
       });
     }
   };
+
   quoteInline = {
     init: function() {
       return g.callbacks.push(function(root) {
@@ -2658,9 +2579,7 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           quote = _ref[_i];
-          if (!quote.hash) {
-            continue;
-          }
+          if (!quote.hash) continue;
           quote.removeAttribute('onclick');
           _results.push($.bind(quote, 'click', quoteInline.toggle));
         }
@@ -2669,17 +2588,13 @@
     },
     toggle: function(e) {
       var id;
-      if (e.shiftKey || e.altKey || e.ctrlKey || e.button !== 0) {
-        return;
-      }
+      if (e.shiftKey || e.altKey || e.ctrlKey || e.button !== 0) return;
       e.preventDefault();
       id = this.hash.slice(1);
       if (this.classList.contains('inlined')) {
         quoteInline.rm(this, id);
       } else {
-        if ($.x("ancestor::*[@id='" + id + "']", this)) {
-          return;
-        }
+        if ($.x("ancestor::*[@id='" + id + "']", this)) return;
         quoteInline.add(this, id);
       }
       return this.classList.toggle('inlined');
@@ -2724,9 +2639,7 @@
     },
     parse: function(req, pathname, id, threadID, inline) {
       var body, href, html, link, newInline, op, quote, reply, _i, _j, _len, _len2, _ref, _ref2;
-      if (!inline.parentNode) {
-        return;
-      }
+      if (!inline.parentNode) return;
       if (req.status !== 200) {
         inline.innerHTML = "" + req.status + " " + req.statusText;
         return;
@@ -2771,6 +2684,7 @@
       });
     }
   };
+
   quotePreview = {
     init: function() {
       return g.callbacks.push(function(root) {
@@ -2779,9 +2693,7 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           quote = _ref[_i];
-          if (!quote.hash) {
-            continue;
-          }
+          if (!quote.hash) continue;
           $.bind(quote, 'mouseover', quotePreview.mouseover);
           $.bind(quote, 'mousemove', ui.hover);
           _results.push($.bind(quote, 'mouseout', quotePreview.mouseout));
@@ -2799,16 +2711,18 @@
       id = this.hash.slice(1);
       if (el = $.id(id)) {
         qp.innerHTML = el.innerHTML;
-        if (conf['Quote Highlighting']) {
-          $.addClass(el, 'qphl');
-        }
+        if (conf['Quote Highlighting']) $.addClass(el, 'qphl');
         if (this.classList.contains('backlink')) {
           replyID = $.x('preceding::input', this).name;
           _ref = $$('.quotelink', qp);
           _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             quote = _ref[_i];
-            _results.push(quote.hash.slice(1) === replyID ? quote.className = 'forwardlink' : void 0);
+            if (quote.hash.slice(1) === replyID) {
+              _results.push(quote.className = 'forwardlink');
+            } else {
+              _results.push(void 0);
+            }
           }
           return _results;
         }
@@ -2823,16 +2737,12 @@
     },
     mouseout: function() {
       var el;
-      if (el = $.id(this.hash.slice(1))) {
-        $.removeClass(el, 'qphl');
-      }
+      if (el = $.id(this.hash.slice(1))) $.removeClass(el, 'qphl');
       return ui.hoverend();
     },
     parse: function(req, id, threadID) {
       var body, html, op, qp, reply, _i, _len, _ref;
-      if (!((qp = ui.el) && (qp.innerHTML === ("Loading " + id + "...")))) {
-        return;
-      }
+      if (!((qp = ui.el) && (qp.innerHTML === ("Loading " + id + "...")))) return;
       if (req.status !== 200) {
         qp.innerHTML = "" + req.status + " " + req.statusText;
         return;
@@ -2857,24 +2767,28 @@
       return Time.node(qp);
     }
   };
+
   quoteOP = {
     init: function() {
       return g.callbacks.push(function(root) {
         var quote, tid, _i, _len, _ref, _results;
-        if (root.className === 'inline') {
-          return;
-        }
+        if (root.className === 'inline') return;
         tid = g.THREAD_ID || $.x('ancestor::div[contains(@class,"thread")]/div', root).id;
         _ref = $$('.quotelink', root);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           quote = _ref[_i];
-          _results.push(quote.hash.slice(1) === tid ? quote.innerHTML += '&nbsp;(OP)' : void 0);
+          if (quote.hash.slice(1) === tid) {
+            _results.push(quote.innerHTML += '&nbsp;(OP)');
+          } else {
+            _results.push(void 0);
+          }
         }
         return _results;
       });
     }
   };
+
   reportButton = {
     init: function() {
       return g.callbacks.push(function(root) {
@@ -2899,6 +2813,7 @@
       return window.open(url, id, set);
     }
   };
+
   threadStats = {
     init: function() {
       var dialog, html;
@@ -2913,9 +2828,7 @@
       return g.callbacks.push(threadStats.node);
     },
     node: function(root) {
-      if (root.className) {
-        return;
-      }
+      if (root.className) return;
       threadStats.postcountEl.textContent = ++threadStats.posts;
       if ($('img[md5]', root)) {
         threadStats.imagecountEl.textContent = ++threadStats.images;
@@ -2925,6 +2838,7 @@
       }
     }
   };
+
   unread = {
     init: function() {
       unread.replies = [];
@@ -2933,14 +2847,10 @@
       return g.callbacks.push(unread.node);
     },
     node: function(root) {
-      if (root.hidden || root.className) {
-        return;
-      }
+      if (root.hidden || root.className) return;
       unread.replies.push(root);
       unread.updateTitle();
-      if (unread.replies.length === 1) {
-        return Favicon.update();
-      }
+      if (unread.replies.length === 1) return Favicon.update();
     },
     scroll: function() {
       var bottom, height, i, reply, _len, _ref;
@@ -2950,23 +2860,18 @@
       for (i = 0, _len = _ref.length; i < _len; i++) {
         reply = _ref[i];
         bottom = reply.getBoundingClientRect().bottom;
-        if (bottom > height) {
-          break;
-        }
+        if (bottom > height) break;
       }
-      if (i === 0) {
-        return;
-      }
+      if (i === 0) return;
       unread.replies = unread.replies.slice(i);
       unread.updateTitle();
-      if (unread.replies.length === 0) {
-        return Favicon.update();
-      }
+      if (unread.replies.length === 0) return Favicon.update();
     },
     updateTitle: function() {
       return d.title = d.title.replace(/\d+/, unread.replies.length);
     }
   };
+
   Favicon = {
     init: function() {
       var favicon, href;
@@ -2990,6 +2895,7 @@
       return $.replace(favicon, clone);
     }
   };
+
   redirect = function() {
     var url;
     switch (g.BOARD) {
@@ -3037,13 +2943,12 @@
     }
     return location.href = url;
   };
+
   imgHover = {
     init: function() {
       return g.callbacks.push(function(root) {
         var thumb;
-        if (!(thumb = $('img[md5]', root))) {
-          return;
-        }
+        if (!(thumb = $('img[md5]', root))) return;
         $.bind(thumb, 'mouseover', imgHover.mouseover);
         $.bind(thumb, 'mousemove', ui.hover);
         return $.bind(thumb, 'mouseout', ui.hoverend);
@@ -3057,6 +2962,7 @@
       return $.add(d.body, ui.el);
     }
   };
+
   imgPreloading = {
     init: function() {
       var controls, form, label;
@@ -3088,9 +2994,7 @@
     },
     node: function(root) {
       var thumb;
-      if (!(imgPreloading.on && (thumb = $('img[md5]:last-child', root)))) {
-        return;
-      }
+      if (!(imgPreloading.on && (thumb = $('img[md5]:last-child', root)))) return;
       return imgPreloading.preload(thumb);
     },
     preload: function(thumb) {
@@ -3099,20 +3003,18 @@
       });
     }
   };
+
   imgGif = {
     init: function() {
       return g.callbacks.push(function(root) {
         var src, thumb;
-        if (!(thumb = $('img[md5]', root))) {
-          return;
-        }
+        if (!(thumb = $('img[md5]', root))) return;
         src = thumb.parentNode.href;
-        if (/gif$/.test(src)) {
-          return thumb.src = src;
-        }
+        if (/gif$/.test(src)) return thumb.src = src;
       });
     }
   };
+
   imgExpand = {
     init: function() {
       g.callbacks.push(imgExpand.node);
@@ -3120,9 +3022,7 @@
     },
     node: function(root) {
       var a, thumb;
-      if (!(thumb = $('img[md5]', root))) {
-        return;
-      }
+      if (!(thumb = $('img[md5]', root))) return;
       a = thumb.parentNode;
       $.bind(a, 'click', imgExpand.cb.toggle);
       if (imgExpand.on && root.className !== 'inline') {
@@ -3131,9 +3031,7 @@
     },
     cb: {
       toggle: function(e) {
-        if (e.shiftKey || e.altKey || e.ctrlKey || e.button !== 0) {
-          return;
-        }
+        if (e.shiftKey || e.altKey || e.ctrlKey || e.button !== 0) return;
         e.preventDefault();
         return imgExpand.toggle(this);
       },
@@ -3177,9 +3075,7 @@
         form.className = klass;
         if (form.classList.contains('fitheight')) {
           $.bind(window, 'resize', imgExpand.resize);
-          if (!imgExpand.style) {
-            imgExpand.style = $.addStyle('');
-          }
+          if (!imgExpand.style) imgExpand.style = $.addStyle('');
           return imgExpand.resize();
         } else if (imgExpand.style) {
           return $.unbind(window, 'resize', imgExpand.resize);
@@ -3230,9 +3126,7 @@
       }
     },
     retry: function(thumb) {
-      if (!thumb.hidden) {
-        return imgExpand.expand(thumb);
-      }
+      if (!thumb.hidden) return imgExpand.expand(thumb);
     },
     dialog: function() {
       var controls, form, imageType, option, select, _i, _len, _ref;
@@ -3261,6 +3155,7 @@
       return imgExpand.style.innerHTML = ".fitheight img + img {max-height:" + d.body.clientHeight + "px;}";
     }
   };
+
   firstRun = {
     init: function() {
       var dialog, style;
@@ -3286,6 +3181,7 @@
       return $.unbind(window, 'click', firstRun.close);
     }
   };
+
   Main = {
     init: function() {
       var cutoff, hiddenThreads, id, lastChecked, now, pathname, temp, timestamp, _ref;
@@ -3316,59 +3212,29 @@
         hiddenThreads = $.get("hiddenThreads/" + g.BOARD + "/", {});
         for (id in hiddenThreads) {
           timestamp = hiddenThreads[id];
-          if (timestamp < cutoff) {
-            delete hiddenThreads[id];
-          }
+          if (timestamp < cutoff) delete hiddenThreads[id];
         }
         _ref = g.hiddenReplies;
         for (id in _ref) {
           timestamp = _ref[id];
-          if (timestamp < cutoff) {
-            delete g.hiddenReplies[id];
-          }
+          if (timestamp < cutoff) delete g.hiddenReplies[id];
         }
         $.set("hiddenThreads/" + g.BOARD + "/", hiddenThreads);
         $.set("hiddenReplies/" + g.BOARD + "/", g.hiddenReplies);
       }
-      if (conf['Filter']) {
-        filter.init();
-      }
-      if (conf['Reply Hiding']) {
-        replyHiding.init();
-      }
-      if (conf['Filter'] || conf['Reply Hiding']) {
-        strikethroughQuotes.init();
-      }
-      if (conf['Anonymize']) {
-        anonymize.init();
-      }
-      if (conf['Time Formatting']) {
-        Time.init();
-      }
-      if (conf['Sauce']) {
-        sauce.init();
-      }
-      if (conf['Image Auto-Gif']) {
-        imgGif.init();
-      }
-      if (conf['Image Hover']) {
-        imgHover.init();
-      }
-      if (conf['Report Button']) {
-        reportButton.init();
-      }
-      if (conf['Quote Backlinks']) {
-        quoteBacklink.init();
-      }
-      if (conf['Quote Inline']) {
-        quoteInline.init();
-      }
-      if (conf['Quote Preview']) {
-        quotePreview.init();
-      }
-      if (conf['Indicate OP quote']) {
-        quoteOP.init();
-      }
+      if (conf['Filter']) filter.init();
+      if (conf['Reply Hiding']) replyHiding.init();
+      if (conf['Filter'] || conf['Reply Hiding']) strikethroughQuotes.init();
+      if (conf['Anonymize']) anonymize.init();
+      if (conf['Time Formatting']) Time.init();
+      if (conf['Sauce']) sauce.init();
+      if (conf['Image Auto-Gif']) imgGif.init();
+      if (conf['Image Hover']) imgHover.init();
+      if (conf['Report Button']) reportButton.init();
+      if (conf['Quote Backlinks']) quoteBacklink.init();
+      if (conf['Quote Inline']) quoteInline.init();
+      if (conf['Quote Preview']) quotePreview.init();
+      if (conf['Indicate OP quote']) quoteOP.init();
       if (d.body) {
         return Main.onLoad();
       } else {
@@ -3382,60 +3248,28 @@
         redirect();
         return;
       }
-      if (!$('#navtopr')) {
-        return;
-      }
+      if (!$('#navtopr')) return;
       Main.globalMessage();
       $.addStyle(Main.css);
       threading.init();
       Favicon.init();
-      if (conf['Image Expansion']) {
-        imgExpand.init();
-      }
-      if (conf['Reveal Spoilers'] && $('.postarea label')) {
-        revealSpoilers.init();
-      }
-      if (conf['Quick Reply']) {
-        Post.init();
-      }
-      if (conf['Thread Watcher']) {
-        watcher.init();
-      }
-      if (conf['Keybinds']) {
-        keybinds.init();
-      }
+      if (conf['Image Expansion']) imgExpand.init();
+      if (conf['Reveal Spoilers'] && $('.postarea label')) revealSpoilers.init();
+      if (conf['Quick Reply']) Post.init();
+      if (conf['Thread Watcher']) watcher.init();
+      if (conf['Keybinds']) keybinds.init();
       if (g.REPLY) {
-        if (conf['Thread Updater']) {
-          updater.init();
-        }
-        if (conf['Thread Stats']) {
-          threadStats.init();
-        }
-        if (conf['Image Preloading']) {
-          imgPreloading.init();
-        }
-        if (conf['Reply Navigation']) {
-          nav.init();
-        }
-        if (conf['Post in Title']) {
-          titlePost.init();
-        }
-        if (conf['Unread Count']) {
-          unread.init();
-        }
+        if (conf['Thread Updater']) updater.init();
+        if (conf['Thread Stats']) threadStats.init();
+        if (conf['Image Preloading']) imgPreloading.init();
+        if (conf['Reply Navigation']) nav.init();
+        if (conf['Post in Title']) titlePost.init();
+        if (conf['Unread Count']) unread.init();
       } else {
-        if (conf['Thread Hiding']) {
-          threadHiding.init();
-        }
-        if (conf['Thread Expansion']) {
-          expandThread.init();
-        }
-        if (conf['Comment Expansion']) {
-          expandComment.init();
-        }
-        if (conf['Index Navigation']) {
-          nav.init();
-        }
+        if (conf['Thread Hiding']) threadHiding.init();
+        if (conf['Thread Expansion']) expandThread.init();
+        if (conf['Comment Expansion']) expandComment.init();
+        if (conf['Index Navigation']) nav.init();
       }
       nodes = $$('.op, a + table');
       g.callbacks.forEach(function(callback) {
@@ -3447,9 +3281,7 @@
       });
       $.bind($('form[name=delform]'), 'DOMNodeInserted', Main.node);
       options.init();
-      if (!$.get('firstrun')) {
-        return firstRun.init();
-      }
+      if (!$.get('firstrun')) return firstRun.init();
     },
     globalMessage: function() {
       /*
@@ -3458,7 +3290,7 @@
       
           To access the parent, we have to break out of the sandbox and evaluate
           in the global context.
-          */      return $.globalEval(function() {
+      */      return $.globalEval(function() {
         return window.addEventListener('message', function(e) {
           var data;
           data = e.data;
@@ -3480,9 +3312,7 @@
     node: function(e) {
       var target;
       target = e.target;
-      if (target.nodeName !== 'TABLE') {
-        return;
-      }
+      if (target.nodeName !== 'TABLE') return;
       return g.callbacks.forEach(function(callback) {
         try {
           return callback(target);
@@ -3767,5 +3597,7 @@
       }\
     '
   };
+
   Main.init();
+
 }).call(this);
