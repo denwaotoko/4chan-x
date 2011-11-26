@@ -1437,7 +1437,10 @@
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
     <div class=move><span id=pstats></span></div>\
-    <div><button id=share>Share</button></div>\
+    <div>\
+      <button id=share>Share</button>\
+      <label>autoshare<input id=autoshare type=checkbox></label>\
+    </div>\
     <textarea name=com></textarea>\
     <div><img id=captchaImg></div>\
     <div><input id=captcha placeholder=Verification></div>\
@@ -1511,20 +1514,26 @@
       return $.rm(this.parentNode);
     },
     getPost: function() {
-      var captcha, com, el, src, upfile, _ref;
+      var captcha, com, el, img, upfile;
       el = Post.el;
       if (!Post.captchas.length) {
         return {
           error: 'You forgot to type in the verification.'
         };
       }
-      if (!((com = $('textarea', el).value) || (src = (_ref = $('#items img[src]')) != null ? _ref.src : void 0))) {
+      com = $('textarea', el).value;
+      img = $('#items img[src]', el);
+      if (!com && !img) {
         return {
           error: 'Error: No text entered.'
         };
       }
       captcha = Post.captchas.shift();
-      if (src) upfile = atob(src.split(',')[1]);
+      Post.stats();
+      if (img) {
+        img.dataset.submit = true;
+        upfile = atob(img.src.split(',')[1]);
+      }
       return {
         mode: 'regist',
         resto: g.THREAD_ID || '',
@@ -1593,7 +1602,7 @@
       return postMessage(data, '*');
     },
     message: function(data) {
-      var el, error;
+      var el, error, img;
       error = data.error;
       if (error) {
         alert(error);
@@ -1601,6 +1610,7 @@
       }
       el = Post.el;
       $('textarea', el).value = '';
+      if (img = $('img[data-submit]', el)) $.rm(img.parentNode);
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {
@@ -1617,7 +1627,7 @@
       } else {
         button.disabled = false;
         button.textContent = 'Submit';
-        if (Post.posts.length && $("#autopost", el).checked) return Post.post();
+        if ($("#autoshare", el).checked) return Post.share();
       }
     }
   };

@@ -1083,7 +1083,10 @@ Post =
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
     <div class=move><span id=pstats></span></div>
-    <div><button id=share>Share</button></div>
+    <div>
+      <button id=share>Share</button>
+      <label>autoshare<input id=autoshare type=checkbox></label>
+    </div>
     <textarea name=com></textarea>
     <div><img id=captchaImg></div>
     <div><input id=captcha placeholder=Verification></div>
@@ -1150,11 +1153,16 @@ Post =
     {el} = Post
     unless Post.captchas.length
       return error: 'You forgot to type in the verification.'
-    unless (com = $('textarea', el).value) or (src = $('#items img[src]')?.src)
+    com = $('textarea', el).value
+    img = $ '#items img[src]', el
+    if !com and !img
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
-    upfile = atob src.split(',')[1] if src
+    Post.stats()
+    if img
+      img.dataset.submit = true
+      upfile = atob img.src.split(',')[1]
     return {
       mode: 'regist'
       resto: g.THREAD_ID or ''
@@ -1215,6 +1223,8 @@ Post =
       return
     {el} = Post
     $('textarea', el).value = ''
+    if img = $ 'img[data-submit]', el
+      $.rm img.parentNode
     Post.cooldown() if conf['Cooldown']
 
   cooldown: ->
@@ -1230,8 +1240,7 @@ Post =
     else
       button.disabled = false
       button.textContent = 'Submit'
-      if Post.posts.length and $("#autopost", el).checked
-        Post.post()
+      Post.share() if $("#autoshare", el).checked
 
 QR =
   #captcha caching for report form
