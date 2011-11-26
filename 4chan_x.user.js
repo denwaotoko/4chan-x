@@ -1405,7 +1405,7 @@
     quote: function(e) {
       var el, i, id, root, s, selection, ss, ta, text, v, _ref;
       e.preventDefault();
-      el = Post.el || Post.dialog();
+      el = Post.el || Post.dialog(this);
       id = this.textContent;
       text = ">>" + id + "\n";
       selection = getSelection();
@@ -1434,9 +1434,14 @@
       }
       if (e.keyCode === 13) return Post.pushCaptcha.call(this);
     },
-    dialog: function() {
+    dialog: function(link) {
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <input type=file>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>      </div>    </div>    ");
+      if (g.REPLY) {
+        Post.resto = g.THREAD_ID;
+      } else {
+        Post.resto = $.x('ancestor::div[@class="thread"]/div', link).id;
+      }
       Post.captchaImg();
       Post.file();
       $.on($('.close', el), 'click', Post.rm);
@@ -1531,7 +1536,7 @@
       }
       return {
         mode: 'regist',
-        resto: g.THREAD_ID || '',
+        resto: Post.resto,
         recaptcha_challenge_field: captcha.challenge,
         recaptcha_response_field: captcha.response,
         name: $('#name', el).value,

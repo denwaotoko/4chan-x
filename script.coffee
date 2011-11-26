@@ -1048,7 +1048,7 @@ Post =
 
   quote: (e) ->
     e.preventDefault()
-    el = Post.el or Post.dialog()
+    el = Post.el or Post.dialog @
 
     id = @textContent
     text = ">>#{id}\n"
@@ -1081,7 +1081,7 @@ Post =
     if e.keyCode is 13
       Post.pushCaptcha.call @
 
-  dialog: ->
+  dialog: (link) ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', "
     <a class=close>X</a>
     <input type=checkbox id=autohide title=autohide>
@@ -1106,6 +1106,10 @@ Post =
     </div>
     "
 
+    if g.REPLY
+      Post.resto = g.THREAD_ID
+    else
+      Post.resto = $.x('ancestor::div[@class="thread"]/div', link).id
     Post.captchaImg()
     Post.file()
     $.on $('.close', el), 'click', Post.rm
@@ -1183,7 +1187,7 @@ Post =
       upfile = atob img.src.split(',')[1]
     return {
       mode: 'regist'
-      resto: g.THREAD_ID or ''
+      resto: Post.resto
       recaptcha_challenge_field: captcha.challenge
       recaptcha_response_field:  captcha.response
       name:  $('#name',  el).value
