@@ -2944,6 +2944,22 @@ Main =
       #post {
         position: fixed;
       }
+      #post ul {
+        margin: 0;
+        padding: 0;
+        width: 300px;
+        overflow: auto;
+        white-space: nowrap;
+      }
+      #post li {
+        display: inline-block;
+        position: relative;
+      }
+      #post .close {
+        position: absolute;
+        color: red;
+        font-size: 14pt;
+      }
       #items img {
         max-height: 100px;
         max-width: 100px;
