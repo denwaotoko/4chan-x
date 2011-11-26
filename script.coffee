@@ -628,7 +628,7 @@ keybinds =
       when conf.close
         if o = $ '#overlay'
           $.rm o
-        else if Post.el
+        else if Post.qr
           Post.rm()
       when conf.spoiler
         ta = e.target
@@ -1168,7 +1168,7 @@ Post =
     Post.file()
 
   file: ->
-    input = $.qr 'input',
+    input = $.el 'input',
       type: 'file'
       name: 'upfile'
       multiple: true

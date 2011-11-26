@@ -873,7 +873,7 @@
         case conf.close:
           if (o = $('#overlay')) {
             $.rm(o);
-          } else if (Post.el) {
+          } else if (Post.qr) {
             Post.rm();
           }
           break;
@@ -1506,7 +1506,7 @@
     },
     file: function() {
       var input;
-      input = $.qr('input', {
+      input = $.el('input', {
         type: 'file',
         name: 'upfile',
         multiple: true
