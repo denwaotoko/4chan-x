@@ -1096,7 +1096,7 @@ Post =
       </div>
       <textarea placeholder=Comment name=com></textarea>
       <div><img id=captchaImg></div>
-      <div><input id=captcha placeholder=Verification></div>
+      <div><input id=recaptcha_response_field placeholder=Verification></div>
       <input type=file>
       <ul id=items></ul>
       <div>
@@ -1110,7 +1110,8 @@ Post =
     Post.file()
     $.on $('.close', el), 'click', Post.rm
     $.on $('#share', el), 'click', Post.share
-    $.on $('#captcha', el), 'keydown', Post.captchaKeydown
+    $.on $('#recaptcha_response_field', el), 'keydown', Post.captchaKeydown
+    $.on $('img', el), 'click', Post.captchaReload
     Post.stats()
     $.add d.body, el
     el
@@ -3007,7 +3008,7 @@ Main =
         width: 300px;
         height: 150px;
       }
-      #post #captcha {
+      #post #recaptcha_response_field {
         width: 100%;
       }
       #post input[type=file] {
