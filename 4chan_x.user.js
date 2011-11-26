@@ -1398,7 +1398,7 @@
     },
     captchaImg: function() {
       var _ref;
-      return (_ref = $('#captchaImg', Post.el)) != null ? _ref.src = 'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge : void 0;
+      return (_ref = $('#captchaImg', Post.qr)) != null ? _ref.src = 'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge : void 0;
     },
     node: function(root) {
       var link;
@@ -1406,9 +1406,9 @@
       return $.on(link, 'click', Post.quote);
     },
     quote: function(e) {
-      var el, i, id, root, s, selection, ss, ta, text, v, _ref;
+      var i, id, qr, root, s, selection, ss, ta, text, v, _ref;
       e.preventDefault();
-      el = Post.el || Post.dialog(this);
+      qr = Post.qr || Post.dialog(this);
       id = this.textContent;
       text = ">>" + id + "\n";
       selection = getSelection();
@@ -1416,7 +1416,7 @@
       if (id === ((_ref = $('input', root)) != null ? _ref.name : void 0)) {
         if (s = selection.toString().replace(/\n/g, '\n>')) text += ">" + s + "\n";
       }
-      ta = $('textarea', el);
+      ta = $('textarea', qr);
       v = ta.value;
       ss = ta.selectionStart;
       ta.value = v.slice(0, ss) + text + v.slice(ss);
@@ -1425,7 +1425,7 @@
       return ta.focus();
     },
     stats: function() {
-      return $('#pstats', Post.el).textContent = "captchas: " + Post.captchas.length;
+      return $('#pstats', Post.qr).textContent = "captchas: " + Post.captchas.length;
     },
     captchaKeydown: function(e) {
       var kc, v;
@@ -1438,8 +1438,8 @@
       if (e.keyCode === 13) return Post.pushCaptcha.call(this);
     },
     dialog: function(link) {
-      var el;
-      el = Post.el = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <input type=file>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
+      var qr;
+      qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <input type=file>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
       if (g.REPLY) {
         Post.resto = g.THREAD_ID;
       } else {
@@ -1447,17 +1447,17 @@
       }
       Post.captchaImg();
       Post.file();
-      $.on($('.close', el), 'click', Post.rm);
-      $.on($('#share', el), 'click', Post.share);
-      $.on($('#recaptcha_response_field', el), 'keydown', Post.captchaKeydown);
-      $.on($('img', el), 'click', Post.captchaReload);
+      $.on($('.close', qr), 'click', Post.rm);
+      $.on($('#share', qr), 'click', Post.share);
+      $.on($('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown);
+      $.on($('img', qr), 'click', Post.captchaReload);
       Post.stats();
-      $.add(d.body, el);
-      return el;
+      $.add(d.body, qr);
+      return qr;
     },
     rm: function() {
-      $.rm(Post.el);
-      return Post.el = null;
+      $.rm(Post.qr);
+      return Post.qr = null;
     },
     captchaReload: function() {
       return window.location = 'javascript:Recaptcha.reload()';
@@ -1477,7 +1477,7 @@
     },
     pushFile: function() {
       var file, items, _fn, _i, _len, _ref;
-      items = $('#items', Post.el);
+      items = $('#items', Post.qr);
       _ref = this.files;
       _fn = function(file) {
         var fr, img, item;
@@ -1485,7 +1485,7 @@
           alert('Error: File too large.');
           return;
         }
-        item = $.el('li', {
+        item = $.qr('li', {
           innerHTML: '<a class=close>X</a><img>'
         });
         $.on($('a', item), 'click', Post.rmFile);
@@ -1506,13 +1506,13 @@
     },
     file: function() {
       var input;
-      input = $.el('input', {
+      input = $.qr('input', {
         type: 'file',
         name: 'upfile',
         multiple: true
       });
       $.on(input, 'change', Post.pushFile);
-      return $.replace($('input[type=file]', Post.el), input);
+      return $.replace($('input[type=file]', Post.qr), input);
     },
     rmFile: function() {
       return $.rm(this.parentNode);
@@ -1529,7 +1529,7 @@
         el = _ref[_i];
         o[el.name] = el.value;
       }
-      img = $('#items img[src]', el);
+      img = $('#items img[src]', qr);
       if (!o.com && !img) return alert('Error: No text entered.');
       if (img) {
         $('input', img.parentNode).form = 'qr_form';
@@ -1538,16 +1538,16 @@
       captcha = Post.captchas.shift();
       Post.stats();
       Post.sage = post.email === 'sage';
-      if (!Post.multi) return $('form', el).submit();
+      if (!Post.multi) return $('form', qr).submit();
       return postMessage({
         mode: 'regist',
         resto: Post.resto,
         recaptcha_challenge_field: captcha.challenge,
         recaptcha_response_field: captcha.response,
-        name: $('#name', el).value,
-        email: $('#email', el).value,
-        sub: $('#sub', el).value,
-        spoiler: (_ref2 = $('#spoiler', el)) != null ? _ref2.checked : void 0,
+        name: $('#name', qr).value,
+        email: $('#email', qr).value,
+        sub: $('#sub', qr).value,
+        spoiler: (_ref2 = $('#spoiler', qr)) != null ? _ref2.checked : void 0,
         com: com,
         upfile: upfile,
         to: 'sys'
@@ -1609,7 +1609,7 @@
       }
       el = Post.el;
       $('textarea', el).value = '';
-      if (img = $('img[data-submit]', el)) $.rm(img.parentNode);
+      if (img = $('img[form]', el)) $.rm(img.parentNode);
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {

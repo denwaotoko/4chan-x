@@ -1044,7 +1044,7 @@ Post =
     Post.captchaImg()
 
   captchaImg: ->
-    $('#captchaImg', Post.el)?.src =
+    $('#captchaImg', Post.qr)?.src =
       'http://www.google.com/recaptcha/api/image?c=' + Post.captcha.challenge
 
   node: (root) ->
@@ -1053,7 +1053,7 @@ Post =
 
   quote: (e) ->
     e.preventDefault()
-    el = Post.el or Post.dialog @
+    qr = Post.qr or Post.dialog @
 
     id = @textContent
     text = ">>#{id}\n"
@@ -1066,7 +1066,7 @@ Post =
         text += ">#{s}\n"
 
     #add text to comment
-    ta = $ 'textarea', el
+    ta = $ 'textarea', qr
     v  = ta.value
     ss = ta.selectionStart
     ta.value = v[0...ss] + text + v[ss..]
@@ -1075,7 +1075,7 @@ Post =
     ta.focus()
 
   stats: ->
-    $('#pstats', Post.el).textContent = "captchas: #{Post.captchas.length}"
+    $('#pstats', Post.qr).textContent = "captchas: #{Post.captchas.length}"
 
   captchaKeydown: (e) ->
     kc = e.keyCode
@@ -1087,7 +1087,7 @@ Post =
       Post.pushCaptcha.call @
 
   dialog: (link) ->
-    el = Post.el = ui.dialog 'post', 'top: 0; right: 0', "
+    qr = Post.qr = ui.dialog 'post', 'top: 0; right: 0', "
     <a class=close>X</a>
     <input type=checkbox id=autohide title=autohide>
     <div class=move>
@@ -1118,17 +1118,17 @@ Post =
       Post.resto = $.x('ancestor::div[@class="thread"]/div', link).id
     Post.captchaImg()
     Post.file()
-    $.on $('.close', el), 'click', Post.rm
-    $.on $('#share', el), 'click', Post.share
-    $.on $('#recaptcha_response_field', el), 'keydown', Post.captchaKeydown
-    $.on $('img', el), 'click', Post.captchaReload
+    $.on $('.close', qr), 'click', Post.rm
+    $.on $('#share', qr), 'click', Post.share
+    $.on $('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown
+    $.on $('img', qr), 'click', Post.captchaReload
     Post.stats()
-    $.add d.body, el
-    el
+    $.add d.body, qr
+    qr
 
   rm: ->
-    $.rm Post.el
-    Post.el = null
+    $.rm Post.qr
+    Post.qr = null
 
   captchaReload: ->
     window.location = 'javascript:Recaptcha.reload()'
@@ -1146,14 +1146,14 @@ Post =
     Post.stats()
 
   pushFile: ->
-    items = $ '#items', Post.el
+    items = $ '#items', Post.qr
     for file in @files
       do (file) ->
         if file.size > Post.MAX_FILE_SIZE
           alert 'Error: File too large.'
           return
 
-        item = $.el 'li',
+        item = $.qr 'li',
           innerHTML: '<a class=close>X</a><img>'
         $.on $('a', item), 'click', Post.rmFile
         $.add items, item
@@ -1168,12 +1168,12 @@ Post =
     Post.file()
 
   file: ->
-    input = $.el 'input',
+    input = $.qr 'input',
       type: 'file'
       name: 'upfile'
       multiple: true
     $.on input, 'change', Post.pushFile
-    $.replace $('input[type=file]', Post.el), input
+    $.replace $('input[type=file]', Post.qr), input
 
   rmFile: ->
     $.rm @parentNode
@@ -1187,7 +1187,7 @@ Post =
     for el in $$ '[name]', qr
       o[el.name] = el.value
 
-    img = $ '#items img[src]', el
+    img = $ '#items img[src]', qr
     if !o.com and !img
       return alert 'Error: No text entered.'
 
@@ -1202,17 +1202,17 @@ Post =
     Post.sage = post.email is 'sage'
 
     if not Post.multi
-      return $('form', el).submit()
+      return $('form', qr).submit()
 
     postMessage {
       mode: 'regist'
       resto: Post.resto
       recaptcha_challenge_field: captcha.challenge
       recaptcha_response_field:  captcha.response
-      name:  $('#name',  el).value
-      email: $('#email', el).value
-      sub:   $('#sub',   el).value
-      spoiler: $('#spoiler', el)?.checked
+      name:  $('#name',  qr).value
+      email: $('#email', qr).value
+      sub:   $('#sub',   qr).value
+      spoiler: $('#spoiler', qr)?.checked
       com:    com
       upfile: upfile
       to: 'sys'
@@ -1259,7 +1259,7 @@ Post =
       return
     {el} = Post
     $('textarea', el).value = ''
-    if img = $ 'img[data-submit]', el
+    if img = $ 'img[form]', el
       $.rm img.parentNode
     Post.cooldown() if conf['Cooldown']
 
