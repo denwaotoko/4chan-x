@@ -1517,28 +1517,29 @@
     rmFile: function() {
       return $.rm(this.parentNode);
     },
-    getPost: function() {
-      var captcha, com, el, img, upfile, _ref;
-      el = Post.el;
+    share: function() {
+      var captcha, el, img, o, qr, _i, _len, _ref, _ref2;
+      qr = Post.qr;
       if (!Post.captchas.length) {
-        return {
-          error: 'You forgot to type in the verification.'
-        };
+        return alert('You forgot to type in the verification.');
       }
-      com = $('textarea', el).value;
+      o = {};
+      _ref = $$('[name]', qr);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        el = _ref[_i];
+        o[el.name] = el.value;
+      }
       img = $('#items img[src]', el);
-      if (!com && !img) {
-        return {
-          error: 'Error: No text entered.'
-        };
+      if (!o.com && !img) return alert('Error: No text entered.');
+      if (img) {
+        $('input', img.parentNode).form = 'qr_form';
+        if (Post.multi) o.upfile = atobimg.src.splilt(',')[1];
       }
       captcha = Post.captchas.shift();
       Post.stats();
-      if (img) {
-        img.dataset.submit = true;
-        upfile = atob(img.src.split(',')[1]);
-      }
-      return {
+      Post.sage = post.email === 'sage';
+      if (!Post.multi) return $('form', el).submit();
+      return postMessage({
         mode: 'regist',
         resto: Post.resto,
         recaptcha_challenge_field: captcha.challenge,
@@ -1546,30 +1547,12 @@
         name: $('#name', el).value,
         email: $('#email', el).value,
         sub: $('#sub', el).value,
-        spoiler: (_ref = $('#spoiler', el)) != null ? _ref.checked : void 0,
+        spoiler: (_ref2 = $('#spoiler', el)) != null ? _ref2.checked : void 0,
         com: com,
-        upfile: upfile
-      };
+        upfile: upfile,
+        to: 'sys'
+      }, '*');
     },
-    share: function() {
-      var error, post;
-      error = (post = Post.getPost()).error;
-      if (error) {
-        alert(error);
-        return;
-      }
-      Post.sage = post.email === 'sage';
-      if (Post.multi) {
-        return Post.shareShare(post);
-      } else {
-        return Post.shareFallback(post);
-      }
-    },
-    shareShare: function(post) {
-      post.to = 'sys';
-      return postMessage(post, '*');
-    },
-    shareFallback: function(post) {},
     sys: function() {
       $.globalEval(function() {
         return window.addEventListener('message', function(e) {

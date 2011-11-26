@@ -1178,21 +1178,33 @@ Post =
   rmFile: ->
     $.rm @parentNode
 
-  getPost: ->
-    {el} = Post
+  share: ->
+    {qr} = Post
     unless Post.captchas.length
-      return error: 'You forgot to type in the verification.'
-    com = $('textarea', el).value
+      return alert 'You forgot to type in the verification.'
+
+    o = {}
+    for el in $$ '[name]', qr
+      o[el.name] = el.value
+
     img = $ '#items img[src]', el
-    if !com and !img
-      return error: 'Error: No text entered.'
+    if !o.com and !img
+      return alert 'Error: No text entered.'
+
+    if img
+      $('input', img.parentNode).form = 'qr_form'
+      if Post.multi
+        o.upfile = atobimg.src.splilt(',')[1]
 
     captcha = Post.captchas.shift()
     Post.stats()
-    if img
-      img.dataset.submit = true
-      upfile = atob img.src.split(',')[1]
-    return {
+
+    Post.sage = post.email is 'sage'
+
+    if not Post.multi
+      return $('form', el).submit()
+
+    postMessage {
       mode: 'regist'
       resto: Post.resto
       recaptcha_challenge_field: captcha.challenge
@@ -1203,26 +1215,8 @@ Post =
       spoiler: $('#spoiler', el)?.checked
       com:    com
       upfile: upfile
-    }
-
-  share: ->
-    {error} = post = Post.getPost()
-    if error
-      alert error
-      return
-
-    Post.sage = post.email is 'sage'
-
-    if Post.multi
-      Post.shareShare post # fuck you names
-    else
-      Post.shareFallback post
-
-  shareShare: (post) ->
-    post.to = 'sys'
-    postMessage post, '*'
-
-  shareFallback: (post) ->
+      to: 'sys'
+    }, '*'
 
   sys: ->
     $.globalEval ->
