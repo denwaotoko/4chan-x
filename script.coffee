@@ -1017,6 +1017,7 @@ options =
 
 Post =
   init: ->
+    $('#recaptcha_response_field').removeAttribute 'id'
     holder = $ '#recaptcha_challenge_field_holder'
     $.on holder, 'DOMNodeInserted', Post.captchaNode
     Post.captchaNode target: holder.firstChild
