@@ -1083,30 +1083,41 @@ Post =
 
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', "
-    <div class=move><span id=pstats></span></div>
-    <div id=foo>
-      <input placeholder=Name    id=name>
-      <input placeholder=Email   id=email>
-      <input placeholder=Subject id=sub>
+    <a class=close>X</a>
+    <input type=checkbox id=autohide title=autohide>
+    <div class=move>
+      <span id=pstats></span>
     </div>
-    <textarea placeholder=Comment name=com></textarea>
-    <div><img id=captchaImg></div>
-    <div><input id=captcha placeholder=Verification></div>
-    <input type=file>
-    <ul id=items></ul>
-    <div>
-      <button id=share>Share</button>
-      <label>autoshare<input id=autoshare type=checkbox></label>
+    <div class=autohide>
+      <div id=foo>
+        <input placeholder=Name    id=name>
+        <input placeholder=Email   id=email>
+        <input placeholder=Subject id=sub>
+      </div>
+      <textarea placeholder=Comment name=com></textarea>
+      <div><img id=captchaImg></div>
+      <div><input id=captcha placeholder=Verification></div>
+      <input type=file>
+      <ul id=items></ul>
+      <div>
+        <button id=share>Share</button>
+        <label>autoshare<input id=autoshare type=checkbox></label>
+      </div>
     </div>
     "
 
     Post.captchaImg()
     Post.file()
+    $.on $('.close', el), 'click', Post.rm
     $.on $('#share', el), 'click', Post.share
     $.on $('#captcha', el), 'keydown', Post.captchaKeydown
     Post.stats()
     $.add d.body, el
     el
+
+  rm: ->
+    $.rm Post.el
+    Post.el = null
 
   captchaReload: ->
     window.location = 'javascript:Recaptcha.reload()'
@@ -2978,7 +2989,7 @@ Main =
         display: inline-block;
         position: relative;
       }
-      #post .close {
+      #post #items .close {
         position: absolute;
         color: red;
         font-size: 14pt;
@@ -3001,6 +3012,16 @@ Main =
       }
       #post input[type=file] {
         width: 100%;
+      }
+      #post .close, #post #autohide {
+        float: right;
+      }
+      #post .autohide {
+        clear: both;
+      }
+      #post:not(:hover) #autohide:checked ~ .autohide {
+        height: 0;
+        overflow: hidden;
       }
     '
 
