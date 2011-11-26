@@ -1436,7 +1436,7 @@
     },
     dialog: function() {
       var el;
-      el = Post.el = ui.dialog('post', 'top: 0; right: 0', "    <div class=move><span id=pstats></span></div>    <div id=foo>      <input placeholder=Name name=name>      <input placeholder=Email name=email>      <input placeholder=Subject name=sub>    </div>    <textarea placeholder=Comment name=com></textarea>    <div><img id=captchaImg></div>    <div><input id=captcha placeholder=Verification></div>    <input type=file>    <ul id=items></ul>    <div>      <button id=share>Share</button>      <label>autoshare<input id=autoshare type=checkbox></label>    </div>    ");
+      el = Post.el = ui.dialog('post', 'top: 0; right: 0', "    <div class=move><span id=pstats></span></div>    <div id=foo>      <input placeholder=Name    id=name>      <input placeholder=Email   id=email>      <input placeholder=Subject id=sub>    </div>    <textarea placeholder=Comment name=com></textarea>    <div><img id=captchaImg></div>    <div><input id=captcha placeholder=Verification></div>    <input type=file>    <ul id=items></ul>    <div>      <button id=share>Share</button>      <label>autoshare<input id=autoshare type=checkbox></label>    </div>    ");
       Post.captchaImg();
       Post.file();
       $.on($('#share', el), 'click', Post.share);
@@ -1519,7 +1519,6 @@
         };
       }
       captcha = Post.captchas.shift();
-      Post.stats();
       if (img) {
         img.dataset.submit = true;
         upfile = atob(img.src.split(',')[1]);
@@ -1529,8 +1528,10 @@
         resto: g.THREAD_ID || '',
         recaptcha_challenge_field: captcha.challenge,
         recaptcha_response_field: captcha.response,
+        name: $('#name', el).value,
+        email: $('#email', el).value,
+        sub: $('#sub', el).value,
         com: com,
-        email: 'sage',
         upfile: upfile
       };
     },
@@ -1542,7 +1543,9 @@
         return;
       }
       post.to = 'sys';
-      return postMessage(post, '*');
+      postMessage(post, '*');
+      Post.stats();
+      return Post.sage = post.email === 'sage';
     },
     sys: function() {
       $.globalEval(function() {

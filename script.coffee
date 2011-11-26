@@ -1085,9 +1085,9 @@ Post =
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', "
     <div class=move><span id=pstats></span></div>
     <div id=foo>
-      <input placeholder=Name name=name>
-      <input placeholder=Email name=email>
-      <input placeholder=Subject name=sub>
+      <input placeholder=Name    id=name>
+      <input placeholder=Email   id=email>
+      <input placeholder=Subject id=sub>
     </div>
     <textarea placeholder=Comment name=com></textarea>
     <div><img id=captchaImg></div>
@@ -1166,7 +1166,6 @@ Post =
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
-    Post.stats()
     if img
       img.dataset.submit = true
       upfile = atob img.src.split(',')[1]
@@ -1175,8 +1174,10 @@ Post =
       resto: g.THREAD_ID or ''
       recaptcha_challenge_field: captcha.challenge
       recaptcha_response_field:  captcha.response
-      com: com
-      email: 'sage'
+      name:  $('#name',  el).value
+      email: $('#email', el).value
+      sub:   $('#sub',   el).value
+      com:    com
       upfile: upfile
     }
 
@@ -1188,6 +1189,8 @@ Post =
 
     post.to = 'sys'
     postMessage post, '*'
+    Post.stats()
+    Post.sage = post.email is 'sage'
 
   sys: ->
     $.globalEval ->
