@@ -1437,15 +1437,15 @@
       var el;
       el = Post.el = ui.dialog('post', 'top: 0; right: 0', '\
     <div class=move><span id=pstats></span></div>\
-    <div id=a></div>\
-    <ul id=items></ul>\
+    <div><button id=share>Share</button></div>\
     <textarea name=com></textarea>\
     <div><img id=captchaImg></div>\
     <div><input id=captcha placeholder=Verification></div>\
-    <button id=share>Share</button>\
+    <input type=file>\
+    <ul id=items></ul>\
     ');
       Post.captchaImg();
-      $.add($('#a', el), Post.file());
+      Post.file();
       $.bind($('#share', el), 'click', Post.share);
       $.bind($('#captcha', el), 'keydown', Post.captchaKeydown);
       Post.stats();
@@ -1469,39 +1469,42 @@
       return Post.stats();
     },
     pushFile: function() {
-      var file, fr, img, item, parent;
-      file = this.files[0];
-      if (file.size > Post.MAX_FILE_SIZE) {
-        alert('Error: File too large.');
-        return;
-      }
-      parent = this.parentNode;
-      $.add(parent, Post.file());
-      if (parent.nodeName === 'LI') {
-        $.rm($('input', parent));
-      } else {
+      var file, items, _fn, _i, _len, _ref;
+      items = $('#items', Post.el);
+      _ref = this.files;
+      _fn = function(file) {
+        var fr, img, item;
+        if (file.size > Post.MAX_FILE_SIZE) {
+          alert('Error: File too large.');
+          return;
+        }
         item = $.el('li', {
           innerHTML: '<a class=close>X</a><img>'
         });
-        $.add(item, this, Post.file());
-        $.add($("#items", Post.el), item);
-      }
-      fr = new FileReader();
-      img = $('img', this.parentNode);
-      fr.onload = function(e) {
-        return img.src = e.target.result;
+        $.add(items, item);
+        fr = new FileReader();
+        img = $('img', item);
+        fr.onload = function(e) {
+          return img.src = e.target.result;
+        };
+        return fr.readAsDataURL(file);
       };
-      fr.readAsDataURL(file);
-      return Post.stats();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        file = _ref[_i];
+        _fn(file);
+      }
+      Post.stats();
+      return Post.file();
     },
     file: function() {
       var input;
       input = $.el('input', {
         type: 'file',
-        name: 'upfile'
+        name: 'upfile',
+        multiple: true
       });
       $.bind(input, 'change', Post.pushFile);
-      return input;
+      return $.replace($('input[type=file]', Post.el), input);
     },
     getPost: function() {
       var b64, captcha, com, el, upfile, _ref, _ref2;

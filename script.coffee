@@ -1083,15 +1083,15 @@ Post =
   dialog: ->
     el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
     <div class=move><span id=pstats></span></div>
-    <div id=a></div>
-    <ul id=items></ul>
+    <div><button id=share>Share</button></div>
     <textarea name=com></textarea>
     <div><img id=captchaImg></div>
     <div><input id=captcha placeholder=Verification></div>
-    <button id=share>Share</button>
+    <input type=file>
+    <ul id=items></ul>
     '
     Post.captchaImg()
-    $.add $('#a', el), Post.file()
+    Post.file()
     $.bind $('#share', el), 'click', Post.share
     $.bind $('#captcha', el), 'keydown', Post.captchaKeydown
     Post.stats()
@@ -1114,35 +1114,33 @@ Post =
     Post.stats()
 
   pushFile: ->
-    file = @files[0]
-    if file.size > Post.MAX_FILE_SIZE
-      alert 'Error: File too large.'
-      return
+    items = $ '#items', Post.el
+    for file in @files
+      do (file) ->
+        if file.size > Post.MAX_FILE_SIZE
+          alert 'Error: File too large.'
+          return
 
-    parent = @parentNode
-    $.add parent, Post.file()
-    if parent.nodeName is 'LI'
-      $.rm $ 'input', parent
-    else
-      item = $.el 'li',
-        innerHTML: '<a class=close>X</a><img>'
-      $.add item, @, Post.file()
-      $.add $("#items", Post.el), item
+        item = $.el 'li',
+          innerHTML: '<a class=close>X</a><img>'
+        $.add items, item
 
-    fr = new FileReader()
-    img = $ 'img', @parentNode
-    fr.onload = (e) ->
-      img.src = e.target.result
-    fr.readAsDataURL file
+        fr = new FileReader()
+        img = $ 'img', item
+        fr.onload = (e) ->
+          img.src = e.target.result
+        fr.readAsDataURL file
 
     Post.stats()
+    Post.file()
 
   file: ->
     input = $.el 'input',
       type: 'file'
       name: 'upfile'
+      multiple: true
     $.bind input, 'change', Post.pushFile
-    input
+    $.replace $('input[type=file]', Post.el), input
 
   getPost: ->
     {el} = Post
