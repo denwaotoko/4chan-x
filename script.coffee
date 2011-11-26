@@ -2993,6 +2993,12 @@ Main =
         width: 300px;
         height: 150px;
       }
+      #post #captcha {
+        width: 100%;
+      }
+      #post input[type=file] {
+        width: 100%;
+      }
     '
 
 Main.init()
