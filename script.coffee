@@ -1096,7 +1096,7 @@ Post =
       </div>
       <textarea placeholder=Comment name=com></textarea>
       <div><img id=captchaImg></div>
-      <div><input id=recaptcha_response_field placeholder=Verification></div>
+      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>
       <input type=file>
       <ul id=items></ul>
       <div>
