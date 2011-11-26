@@ -628,8 +628,8 @@ keybinds =
       when conf.close
         if o = $ '#overlay'
           $.rm o
-        else if QR.qr
-          QR.close()
+        else if Post.el
+          Post.rm()
       when conf.spoiler
         ta = e.target
         return unless ta.nodeName is 'TEXTAREA'
