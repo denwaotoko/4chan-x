@@ -1017,6 +1017,9 @@ options =
 
 Post =
   init: ->
+    Post.spoiler = if $('input[name=spoiler]')
+      '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
+    else ''
     $('#recaptcha_response_field').removeAttribute 'id'
     holder = $ '#recaptcha_challenge_field_holder'
     $.on holder, 'DOMNodeInserted', Post.captchaNode
@@ -1025,6 +1028,7 @@ Post =
     $.add d.body, $.el 'iframe',
       id: 'iframe'
       src: "http://sys.4chan.org/#{g.BOARD}/src"
+      hidden: true
     Post.captchas = []
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
@@ -1102,6 +1106,7 @@ Post =
       <div>
         <button id=share>Share</button>
         <label>autoshare<input id=autoshare type=checkbox></label>
+        #{Post.spoiler}
       </div>
     </div>
     "
@@ -1193,6 +1198,7 @@ Post =
       name:  $('#name',  el).value
       email: $('#email', el).value
       sub:   $('#sub',   el).value
+      spoiler: $('#spoiler', el)?.checked
       com:    com
       upfile: upfile
     }
