@@ -1146,12 +1146,11 @@ Post =
     {el} = Post
     unless Post.captchas.length
       return error: 'You forgot to type in the verification.'
-    unless (com = $('textarea', el).value) or $('#items input', el)?.files.length
+    unless (com = $('textarea', el).value) or (src = $('#items img[src]')?.src)
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
-    if b64 = $('#items img', el)?.src.split(',')[1]
-      upfile = atob b64
+    upfile = atob src.split(',')[1] if src
     return {
       mode: 'regist'
       resto: g.THREAD_ID or ''

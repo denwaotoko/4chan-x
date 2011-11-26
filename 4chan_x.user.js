@@ -1507,22 +1507,20 @@
       return $.replace($('input[type=file]', Post.el), input);
     },
     getPost: function() {
-      var b64, captcha, com, el, upfile, _ref, _ref2;
+      var captcha, com, el, src, upfile, _ref;
       el = Post.el;
       if (!Post.captchas.length) {
         return {
           error: 'You forgot to type in the verification.'
         };
       }
-      if (!((com = $('textarea', el).value) || ((_ref = $('#items input', el)) != null ? _ref.files.length : void 0))) {
+      if (!((com = $('textarea', el).value) || (src = (_ref = $('#items img[src]')) != null ? _ref.src : void 0))) {
         return {
           error: 'Error: No text entered.'
         };
       }
       captcha = Post.captchas.shift();
-      if (b64 = (_ref2 = $('#items img', el)) != null ? _ref2.src.split(',')[1] : void 0) {
-        upfile = atob(b64);
-      }
+      if (src) upfile = atob(src.split(',')[1]);
       return {
         mode: 'regist',
         resto: g.THREAD_ID || '',
