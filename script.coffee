@@ -1017,6 +1017,7 @@ options =
 
 Post =
   init: ->
+    Post.multi = FormData?
     Post.spoiler = if $('input[name=spoiler]')
       '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
     else ''
@@ -1187,6 +1188,7 @@ Post =
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
+    Post.stats()
     if img
       img.dataset.submit = true
       upfile = atob img.src.split(',')[1]
@@ -1209,10 +1211,18 @@ Post =
       alert error
       return
 
+    Post.sage = post.email is 'sage'
+
+    if Post.multi
+      Post.shareShare post # fuck you names
+    else
+      Post.shareFallback post
+
+  shareShare: (post) ->
     post.to = 'sys'
     postMessage post, '*'
-    Post.stats()
-    Post.sage = post.email is 'sage'
+
+  shareFallback: (post) ->
 
   sys: ->
     $.globalEval ->

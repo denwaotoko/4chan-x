@@ -1371,6 +1371,7 @@
   Post = {
     init: function() {
       var holder;
+      Post.multi = typeof FormData !== "undefined" && FormData !== null;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
       $('#recaptcha_response_field').removeAttribute('id');
       holder = $('#recaptcha_challenge_field_holder');
@@ -1532,6 +1533,7 @@
         };
       }
       captcha = Post.captchas.shift();
+      Post.stats();
       if (img) {
         img.dataset.submit = true;
         upfile = atob(img.src.split(',')[1]);
@@ -1556,11 +1558,18 @@
         alert(error);
         return;
       }
-      post.to = 'sys';
-      postMessage(post, '*');
-      Post.stats();
-      return Post.sage = post.email === 'sage';
+      Post.sage = post.email === 'sage';
+      if (Post.multi) {
+        return Post.shareShare(post);
+      } else {
+        return Post.shareFallback(post);
+      }
     },
+    shareShare: function(post) {
+      post.to = 'sys';
+      return postMessage(post, '*');
+    },
+    shareFallback: function(post) {},
     sys: function() {
       $.globalEval(function() {
         return window.addEventListener('message', function(e) {
