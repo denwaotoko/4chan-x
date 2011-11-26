@@ -1082,18 +1082,24 @@ Post =
       Post.pushCaptcha.call @
 
   dialog: ->
-    el = Post.el = ui.dialog 'post', 'top: 0; right: 0', '
+    el = Post.el = ui.dialog 'post', 'top: 0; right: 0', "
     <div class=move><span id=pstats></span></div>
-    <div>
-      <button id=share>Share</button>
-      <label>autoshare<input id=autoshare type=checkbox></label>
+    <div id=foo>
+      <input placeholder=Name name=name>
+      <input placeholder=Email name=email>
+      <input placeholder=Subject name=sub>
     </div>
-    <textarea name=com></textarea>
+    <textarea placeholder=Comment name=com></textarea>
     <div><img id=captchaImg></div>
     <div><input id=captcha placeholder=Verification></div>
     <input type=file>
     <ul id=items></ul>
-    '
+    <div>
+      <button id=share>Share</button>
+      <label>autoshare<input id=autoshare type=checkbox></label>
+    </div>
+    "
+
     Post.captchaImg()
     Post.file()
     $.on $('#share', el), 'click', Post.share
@@ -2977,6 +2983,15 @@ Main =
       #items img {
         max-height: 100px;
         max-width: 100px;
+      }
+      #post #foo input {
+        width: 97px;
+      }
+      #post textarea {
+        border: 0;
+        margin: 0;
+        width: 300px;
+        height: 150px;
       }
     '
 
