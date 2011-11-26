@@ -1380,7 +1380,6 @@
         id: 'iframe',
         src: "http://sys.4chan.org/" + g.BOARD + "/src"
       }));
-      Post.comments = [];
       Post.captchas = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
@@ -1422,7 +1421,7 @@
       return ta.focus();
     },
     stats: function() {
-      return $('#pstats', Post.el).textContent = "comments: " + Post.comments.length + ", captchas: " + Post.captchas.length;
+      return $('#pstats', Post.el).textContent = "captchas: " + Post.captchas.length;
     },
     captchaKeydown: function(e) {
       var kc, v;
@@ -1443,13 +1442,11 @@
     <textarea name=com></textarea>\
     <div><img id=captchaImg></div>\
     <div><input id=captcha placeholder=Verification></div>\
-    <button id=queue>Queue</button>\
     <button id=share>Share</button>\
     ');
       Post.captchaImg();
       $.add($('#a', el), Post.file());
       $.bind($('#share', el), 'click', Post.share);
-      $.bind($('#queue', el), 'click', Post.pushComment);
       $.bind($('#captcha', el), 'keydown', Post.captchaKeydown);
       Post.stats();
       $.add(d.body, el);
@@ -1469,17 +1466,6 @@
       captcha.response = response;
       Post.captchas.push(captcha);
       Post.captchaReload();
-      return Post.stats();
-    },
-    pushComment: function() {
-      var comment, ta;
-      ta = $('textarea', Post.el);
-      if (!(comment = ta.value)) {
-        alert('Error: No text entered.');
-        return;
-      }
-      ta.value = '';
-      Post.comments.push(comment);
       return Post.stats();
     },
     pushFile: function() {
@@ -1518,14 +1504,14 @@
       return input;
     },
     getPost: function() {
-      var b64, captcha, el, upfile, _ref, _ref2;
+      var b64, captcha, com, el, upfile, _ref, _ref2;
       el = Post.el;
       if (!Post.captchas.length) {
         return {
           error: 'You forgot to type in the verification.'
         };
       }
-      if (!(Post.comments.length || ((_ref = $('#items input', el)) != null ? _ref.files.length : void 0))) {
+      if (!((com = $('textarea', el).value) || ((_ref = $('#items input', el)) != null ? _ref.files.length : void 0))) {
         return {
           error: 'Error: No text entered.'
         };
@@ -1539,7 +1525,7 @@
         resto: g.THREAD_ID || '',
         recaptcha_challenge_field: captcha.challenge,
         recaptcha_response_field: captcha.response,
-        com: Post.comments.shift(),
+        com: com,
         email: 'sage',
         upfile: upfile
       };
@@ -1602,12 +1588,14 @@
       return postMessage(data, '*');
     },
     message: function(data) {
-      var error;
+      var el, error;
       error = data.error;
       if (error) {
         alert(error);
         return;
       }
+      el = Post.el;
+      $('textarea', el).value = '';
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {

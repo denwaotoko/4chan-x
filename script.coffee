@@ -1024,7 +1024,6 @@ Post =
     $.add d.body, $.el 'iframe',
       id: 'iframe'
       src: "http://sys.4chan.org/#{g.BOARD}/src"
-    Post.comments = []
     Post.captchas = []
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
@@ -1070,7 +1069,7 @@ Post =
     ta.focus()
 
   stats: ->
-    $('#pstats', Post.el).textContent = "comments: #{Post.comments.length}, captchas: #{Post.captchas.length}"
+    $('#pstats', Post.el).textContent = "captchas: #{Post.captchas.length}"
 
   captchaKeydown: (e) ->
     kc = e.keyCode
@@ -1089,13 +1088,11 @@ Post =
     <textarea name=com></textarea>
     <div><img id=captchaImg></div>
     <div><input id=captcha placeholder=Verification></div>
-    <button id=queue>Queue</button>
     <button id=share>Share</button>
     '
     Post.captchaImg()
     $.add $('#a', el), Post.file()
     $.bind $('#share', el), 'click', Post.share
-    $.bind $('#queue', el), 'click', Post.pushComment
     $.bind $('#captcha', el), 'keydown', Post.captchaKeydown
     Post.stats()
     $.add d.body, el
@@ -1114,16 +1111,6 @@ Post =
     captcha.response = response
     Post.captchas.push captcha
     Post.captchaReload()
-    Post.stats()
-
-  pushComment: ->
-    ta = $ 'textarea', Post.el
-    unless comment = ta.value
-      alert 'Error: No text entered.'
-      return
-    ta.value = ''
-
-    Post.comments.push comment
     Post.stats()
 
   pushFile: ->
@@ -1161,7 +1148,7 @@ Post =
     {el} = Post
     unless Post.captchas.length
       return error: 'You forgot to type in the verification.'
-    unless Post.comments.length or $('#items input', el)?.files.length
+    unless (com = $('textarea', el).value) or $('#items input', el)?.files.length
       return error: 'Error: No text entered.'
 
     captcha = Post.captchas.shift()
@@ -1172,7 +1159,7 @@ Post =
       resto: g.THREAD_ID or ''
       recaptcha_challenge_field: captcha.challenge
       recaptcha_response_field:  captcha.response
-      com: Post.comments.shift()
+      com: com
       email: 'sage'
       upfile: upfile
     }
@@ -1225,6 +1212,8 @@ Post =
     if error
       alert error
       return
+    {el} = Post
+    $('textarea', el).value = ''
     Post.cooldown() if conf['Cooldown']
 
   cooldown: ->
