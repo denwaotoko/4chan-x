@@ -1439,7 +1439,7 @@
     },
     dialog: function(link) {
       var qr;
-      qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <input type=file>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
+      qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <div id=fileDiv></div>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
       if (g.REPLY) {
         Post.resto = g.THREAD_ID;
       } else {
@@ -1476,7 +1476,8 @@
       return Post.stats();
     },
     pushFile: function() {
-      var file, items, _fn, _i, _len, _ref;
+      var file, items, self, _fn, _i, _len, _ref;
+      self = this;
       items = $('#items', Post.qr);
       _ref = this.files;
       _fn = function(file) {
@@ -1485,11 +1486,12 @@
           alert('Error: File too large.');
           return;
         }
-        item = $.qr('li', {
+        item = $.el('li', {
           innerHTML: '<a class=close>X</a><img>'
         });
         $.on($('a', item), 'click', Post.rmFile);
         $.add(items, item);
+        if (!Post.multi) $.add(item, self);
         fr = new FileReader();
         img = $('img', item);
         fr.onload = function(e) {
@@ -1505,14 +1507,11 @@
       return Post.file();
     },
     file: function() {
-      var input;
-      input = $.el('input', {
-        type: 'file',
-        name: 'upfile',
-        multiple: true
-      });
-      $.on(input, 'change', Post.pushFile);
-      return $.replace($('input[type=file]', Post.qr), input);
+      var fileDiv, multiple;
+      multiple = Post.multi ? 'multiple' : '';
+      fileDiv = $('#fileDiv', Post.qr);
+      fileDiv.innerHTML = "<input type=file " + multiple + ">";
+      return $.on($('input', fileDiv), 'change', Post.pushFile);
     },
     rmFile: function() {
       return $.rm(this.parentNode);

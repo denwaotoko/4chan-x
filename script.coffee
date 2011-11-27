@@ -1102,7 +1102,7 @@ Post =
       <textarea placeholder=Comment name=com></textarea>
       <div><img id=captchaImg></div>
       <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>
-      <input type=file>
+      <div id=fileDiv></div>
       <ul id=items></ul>
       <div>
         <button id=share>Share</button>
@@ -1146,6 +1146,7 @@ Post =
     Post.stats()
 
   pushFile: ->
+    self = @
     items = $ '#items', Post.qr
     for file in @files
       do (file) ->
@@ -1153,10 +1154,12 @@ Post =
           alert 'Error: File too large.'
           return
 
-        item = $.qr 'li',
+        item = $.el 'li',
           innerHTML: '<a class=close>X</a><img>'
         $.on $('a', item), 'click', Post.rmFile
         $.add items, item
+        if not Post.multi
+          $.add item, self
 
         fr = new FileReader()
         img = $ 'img', item
@@ -1168,12 +1171,10 @@ Post =
     Post.file()
 
   file: ->
-    input = $.el 'input',
-      type: 'file'
-      name: 'upfile'
-      multiple: true
-    $.on input, 'change', Post.pushFile
-    $.replace $('input[type=file]', Post.qr), input
+    multiple = if Post.multi then 'multiple' else ''
+    fileDiv = $ '#fileDiv', Post.qr
+    fileDiv.innerHTML = "<input type=file #{multiple}>"
+    $.on $('input', fileDiv), 'change', Post.pushFile
 
   rmFile: ->
     $.rm @parentNode
