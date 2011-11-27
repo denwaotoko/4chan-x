@@ -1547,7 +1547,7 @@
       if (img) {
         img.dataset.submit = true;
         if (Post.multi) {
-          o.upfile = atob(img.src.splilt(',')[1]);
+          o.upfile = atob(img.src.split(',')[1]);
         } else {
           $.add(form, $('input', img.parentNode));
         }
