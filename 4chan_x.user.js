@@ -1371,7 +1371,7 @@
   Post = {
     init: function() {
       var holder;
-      Post.multi = typeof FormData !== "undefined" && FormData !== null;
+      Post.multi = false;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
       $('#recaptcha_response_field').removeAttribute('id');
       holder = $('#recaptcha_challenge_field_holder');
