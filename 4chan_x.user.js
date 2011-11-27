@@ -1643,8 +1643,12 @@
         return;
       }
       qr = Post.qr;
-      $('textarea', qr).value = '';
       if (img = $('img[data-submit]', qr)) $.rm(img.parentNode);
+      if (conf['Persistent QR'] || $('#items img[src]', qr)) {
+        $('textarea', qr).value = '';
+      } else {
+        Post.rm();
+      }
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {

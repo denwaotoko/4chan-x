@@ -1296,9 +1296,12 @@ Post =
       alert error
       return
     {qr} = Post
-    $('textarea', qr).value = ''
     if img = $ 'img[data-submit]', qr
       $.rm img.parentNode
+    if conf['Persistent QR'] or $('#items img[src]', qr)
+      $('textarea', qr).value = ''
+    else
+      Post.rm()
     Post.cooldown() if conf['Cooldown']
 
   cooldown: ->
