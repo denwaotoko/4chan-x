@@ -1371,7 +1371,7 @@
   Post = {
     init: function() {
       var form, holder;
-      Post.multi = typeof FormData !== "undefined" && FormData !== null;
+      Post.multi = false;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
       if (!Post.multi) {
         form = Post.form = $.el('form', {
@@ -1380,7 +1380,7 @@
           action: "http://sys.4chan.org/" + g.BOARD + "/post",
           target: 'iframe',
           hidden: true,
-          innerHTML: "          <input name=mode>          <input name=resto>          <input name=name>          <input name=email>          <input name=sub>          <input name=com>          <input name=recaptcha_challenge_field>          <input name=recaptcha_response_field>          " + Post.spoiler + "        "
+          innerHTML: "          <input name=mode>          <input name=resto>          <input name=name>          <input name=email>          <input name=sub>          <textarea name=com></textarea>          <input name=recaptcha_challenge_field>          <input name=recaptcha_response_field>          " + Post.spoiler + "        "
         });
         $.add(d.body, form);
       }
@@ -1392,8 +1392,8 @@
       });
       $.add(d.body, $.el('iframe', {
         id: 'iframe',
-        src: "http://sys.4chan.org/" + g.BOARD + "/src",
-        hidden: true
+        hidden: true,
+        src: Post.multi ? "http://sys.4chan.org/" + g.BOARD + "/src" : 'about:blank'
       }));
       Post.captchas = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
@@ -1561,6 +1561,7 @@
         o.to = 'sys';
         return postMessage(o, '*');
       } else {
+        delete o.upfile;
         for (name in o) {
           value = o[name];
           form[name].value = value;
@@ -1569,6 +1570,11 @@
       }
     },
     sys: function() {
+      var data, node, recaptcha, _ref;
+      if (recaptcha = $('#recaptcha_response_field')) {
+        $.on(recaptcha, 'keydown', Post.keydown);
+        return;
+      }
       $.globalEval(function() {
         return window.addEventListener('message', function(e) {
           var data;
@@ -1577,8 +1583,15 @@
           return parent.postMessage(data, '*');
         }, false);
       });
+      data = {
+        to: 'Post.message'
+      };
+      if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
+        data.error = node.textContent;
+      }
+      postMessage(data, '*');
       return $.on(window, 'message', function(e) {
-        var bb, data, fd, i, key, l, to, ui8a, upfile, val;
+        var bb, fd, i, key, l, to, ui8a, upfile, val;
         data = e.data;
         to = data.to;
         if (to !== 'sys') return;
@@ -1617,6 +1630,7 @@
     },
     message: function(data) {
       var el, error, img;
+      if (!Post.multi) $('#iframe').src = 'about:blank';
       error = data.error;
       if (error) {
         alert(error);

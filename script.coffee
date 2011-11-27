@@ -1017,7 +1017,7 @@ options =
 
 Post =
   init: ->
-    Post.multi = FormData?
+    Post.multi = false #FormData?
     Post.spoiler = if $('input[name=spoiler]')
       '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
     else ''
@@ -1035,7 +1035,7 @@ Post =
           <input name=name>
           <input name=email>
           <input name=sub>
-          <input name=com>
+          <textarea name=com></textarea>
           <input name=recaptcha_challenge_field>
           <input name=recaptcha_response_field>
           #{Post.spoiler}
@@ -1049,8 +1049,8 @@ Post =
 
     $.add d.body, $.el 'iframe',
       id: 'iframe'
-      src: "http://sys.4chan.org/#{g.BOARD}/src"
       hidden: true
+      src: if Post.multi then "http://sys.4chan.org/#{g.BOARD}/src" else 'about:blank'
     Post.captchas = []
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
@@ -1233,17 +1233,30 @@ Post =
       o.to = 'sys'
       postMessage o, '*'
     else
+      delete o.upfile
       for name, value of o
         form[name].value = value
       form.submit()
 
   sys: ->
+    if recaptcha = $ '#recaptcha_response_field' #post reporting
+      $.on recaptcha, 'keydown', Post.keydown
+      return
     $.globalEval ->
       window.addEventListener('message', (e) ->
         {data} = e
         return unless data.to is 'Post.message'
         parent.postMessage data, '*'
       , false)
+
+    #code for non Post.multi
+    data = to: 'Post.message'
+    if node = $('table font b')?.firstChild
+      data.error = node.textContent
+    postMessage data, '*'
+    #if we're an iframe, parent will blank us
+    #/end non Post.multi
+
     $.on window, 'message', (e) ->
       {data} = e
       {to} = data
@@ -1272,6 +1285,8 @@ Post =
     postMessage data, '*'
 
   message: (data) ->
+    if not Post.multi
+      $('#iframe').src = 'about:blank'
     {error} = data
     if error
       alert error
