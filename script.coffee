@@ -1017,7 +1017,7 @@ options =
 
 Post =
   init: ->
-    Post.multi = false #FormData?
+    Post.multi = FormData?
     Post.spoiler = if $('input[name=spoiler]')
       '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
     else ''

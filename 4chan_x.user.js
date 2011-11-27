@@ -1371,7 +1371,7 @@
   Post = {
     init: function() {
       var form, holder;
-      Post.multi = false;
+      Post.multi = typeof FormData !== "undefined" && FormData !== null;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
       if (!Post.multi) {
         form = Post.form = $.el('form', {
