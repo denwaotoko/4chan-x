@@ -1446,7 +1446,10 @@
         Post.captchaReload();
         return;
       }
-      if (e.keyCode === 13) return Post.pushCaptcha.call(this);
+      if (e.keyCode === 13) {
+        Post.pushCaptcha.call(this);
+        return Post.share(true);
+      }
     },
     dialog: function(link) {
       var qr;
@@ -1527,7 +1530,7 @@
     rmFile: function() {
       return $.rm(this.parentNode);
     },
-    share: function() {
+    share: function(indirect) {
       var captcha, el, form, img, name, o, qr, value, _i, _len, _ref;
       qr = Post.qr, form = Post.form;
       if (!Post.captchas.length) {
@@ -1542,8 +1545,12 @@
         el = _ref[_i];
         o[el.name] = el.value;
       }
+      delete o.upfile;
       img = $('#items img[src]', qr);
-      if (!o.com && !img) return alert('Error: No text entered.');
+      if (!(o.com || img)) {
+        if (indirect) return;
+        return alert('Error: No text entered.');
+      }
       if (img) {
         img.dataset.submit = true;
         if (Post.multi) {
@@ -1561,7 +1568,6 @@
         o.to = 'sys';
         return postMessage(o, '*');
       } else {
-        delete o.upfile;
         for (name in o) {
           value = o[name];
           form[name].value = value;
@@ -1655,7 +1661,7 @@
       } else {
         button.disabled = false;
         button.textContent = 'Submit';
-        if ($("#autoshare", el).checked) return Post.share();
+        if ($("#autoshare", el).checked) return Post.share(true);
       }
     }
   };

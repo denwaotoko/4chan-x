@@ -1106,6 +1106,7 @@ Post =
       return
     if e.keyCode is 13
       Post.pushCaptcha.call @
+      Post.share true
 
   dialog: (link) ->
     qr = Post.qr = ui.dialog 'post', 'top: 0; right: 0', "
@@ -1200,9 +1201,10 @@ Post =
   rmFile: ->
     $.rm @parentNode
 
-  share: ->
+  share: (indirect) ->
     {qr, form} = Post
-    unless Post.captchas.length
+
+    if not Post.captchas.length
       return alert 'You forgot to type in the verification.'
 
     o =
@@ -1210,9 +1212,12 @@ Post =
       mode: 'regist'
     for el in $$ '[name]', qr
       o[el.name] = el.value
-
+    delete o.upfile
     img = $ '#items img[src]', qr
-    if !o.com and !img
+
+    if not (o.com or img)
+      if indirect
+        return
       return alert 'Error: No text entered.'
 
     if img
@@ -1233,7 +1238,6 @@ Post =
       o.to = 'sys'
       postMessage o, '*'
     else
-      delete o.upfile
       for name, value of o
         form[name].value = value
       form.submit()
@@ -1310,7 +1314,8 @@ Post =
     else
       button.disabled = false
       button.textContent = 'Submit'
-      Post.share() if $("#autoshare", el).checked
+      if $("#autoshare", el).checked
+        Post.share true
 
 QR =
   #captcha caching for report form
