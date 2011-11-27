@@ -1242,6 +1242,9 @@ Post =
         form[name].value = value
       form.submit()
 
+    if conf['Auto Hide QR']
+      $('#autohide', qr).checked = true
+
   sys: ->
     if recaptcha = $ '#recaptcha_response_field' #post reporting
       $.on recaptcha, 'keydown', Post.keydown
@@ -1289,13 +1292,14 @@ Post =
     postMessage data, '*'
 
   message: (data) ->
+    {qr} = Post
     if not Post.multi
       $('#iframe').src = 'about:blank'
     {error} = data
     if error
+      $('#autohide', qr).checked = false
       alert error
       return
-    {qr} = Post
     if img = $ 'img[data-submit]', qr
       $.rm img.parentNode
     if conf['Persistent QR'] or $('#items img[src]', qr)

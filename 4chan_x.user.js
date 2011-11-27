@@ -1566,14 +1566,15 @@
       Post.sage = post.email === 'sage';
       if (Post.multi) {
         o.to = 'sys';
-        return postMessage(o, '*');
+        postMessage(o, '*');
       } else {
         for (name in o) {
           value = o[name];
           form[name].value = value;
         }
-        return form.submit();
+        form.submit();
       }
+      if (conf['Auto Hide QR']) return $('#autohide', qr).checked = true;
     },
     sys: function() {
       var data, node, recaptcha, _ref;
@@ -1636,13 +1637,14 @@
     },
     message: function(data) {
       var error, img, qr;
+      qr = Post.qr;
       if (!Post.multi) $('#iframe').src = 'about:blank';
       error = data.error;
       if (error) {
+        $('#autohide', qr).checked = false;
         alert(error);
         return;
       }
-      qr = Post.qr;
       if (img = $('img[data-submit]', qr)) $.rm(img.parentNode);
       if (conf['Persistent QR'] || $('#items img[src]', qr)) {
         $('textarea', qr).value = '';
