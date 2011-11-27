@@ -1629,16 +1629,16 @@
       return postMessage(data, '*');
     },
     message: function(data) {
-      var el, error, img;
+      var error, img, qr;
       if (!Post.multi) $('#iframe').src = 'about:blank';
       error = data.error;
       if (error) {
         alert(error);
         return;
       }
-      el = Post.el;
-      $('textarea', el).value = '';
-      if (img = $('img[data-submit]', el)) $.rm(img.parentNode);
+      qr = Post.qr;
+      $('textarea', qr).value = '';
+      if (img = $('img[data-submit]', qr)) $.rm(img.parentNode);
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {

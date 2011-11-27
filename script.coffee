@@ -1291,9 +1291,9 @@ Post =
     if error
       alert error
       return
-    {el} = Post
-    $('textarea', el).value = ''
-    if img = $ 'img[data-submit]', el
+    {qr} = Post
+    $('textarea', qr).value = ''
+    if img = $ 'img[data-submit]', qr
       $.rm img.parentNode
     Post.cooldown() if conf['Cooldown']
 
