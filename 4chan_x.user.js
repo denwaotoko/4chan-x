@@ -1370,9 +1370,20 @@
 
   Post = {
     init: function() {
-      var holder;
+      var form, holder;
       Post.multi = false;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
+      if (!Post.multi) {
+        form = Post.form = $.el('form', {
+          enctype: 'multipart/form-data',
+          method: 'post',
+          action: "http://sys.4chan.org/" + g.BOARD + "/post",
+          target: 'iframe',
+          hidden: true,
+          innerHTML: "          <input name=mode>          <input name=resto>          <input name=name>          <input name=email>          <input name=sub>          <input name=com>          <input name=recaptcha_challenge_field>          <input name=recaptcha_response_field>          " + Post.spoiler + "        "
+        });
+        $.add(d.body, form);
+      }
       $('#recaptcha_response_field').removeAttribute('id');
       holder = $('#recaptcha_challenge_field_holder');
       $.on(holder, 'DOMNodeInserted', Post.captchaNode);
@@ -1510,19 +1521,22 @@
       var fileDiv, multiple;
       multiple = Post.multi ? 'multiple' : '';
       fileDiv = $('#fileDiv', Post.qr);
-      fileDiv.innerHTML = "<input type=file " + multiple + ">";
+      fileDiv.innerHTML = "<input type=file name=upfile " + multiple + ">";
       return $.on($('input', fileDiv), 'change', Post.pushFile);
     },
     rmFile: function() {
       return $.rm(this.parentNode);
     },
     share: function() {
-      var captcha, el, img, o, qr, _i, _len, _ref, _ref2;
-      qr = Post.qr;
+      var captcha, el, form, img, name, o, qr, value, _i, _len, _ref;
+      qr = Post.qr, form = Post.form;
       if (!Post.captchas.length) {
         return alert('You forgot to type in the verification.');
       }
-      o = {};
+      o = {
+        resto: Post.resto,
+        mode: 'regist'
+      };
       _ref = $$('[name]', qr);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         el = _ref[_i];
@@ -1531,26 +1545,28 @@
       img = $('#items img[src]', qr);
       if (!o.com && !img) return alert('Error: No text entered.');
       if (img) {
-        $('input', img.parentNode).form = 'qr_form';
-        if (Post.multi) o.upfile = atobimg.src.splilt(',')[1];
+        img.dataset.submit = true;
+        if (Post.multi) {
+          o.upfile = atob(img.src.splilt(',')[1]);
+        } else {
+          $.add(form, $('input', img.parentNode));
+        }
       }
       captcha = Post.captchas.shift();
+      o.recaptcha_challenge_field = captcha.challenge;
+      o.recaptcha_response_field = captcha.response;
       Post.stats();
       Post.sage = post.email === 'sage';
-      if (!Post.multi) return $('form', qr).submit();
-      return postMessage({
-        mode: 'regist',
-        resto: Post.resto,
-        recaptcha_challenge_field: captcha.challenge,
-        recaptcha_response_field: captcha.response,
-        name: $('#name', qr).value,
-        email: $('#email', qr).value,
-        sub: $('#sub', qr).value,
-        spoiler: (_ref2 = $('#spoiler', qr)) != null ? _ref2.checked : void 0,
-        com: com,
-        upfile: upfile,
-        to: 'sys'
-      }, '*');
+      if (Post.multi) {
+        o.to = 'sys';
+        return postMessage(o, '*');
+      } else {
+        for (name in o) {
+          value = o[name];
+          form[name].value = value;
+        }
+        return form.submit();
+      }
     },
     sys: function() {
       $.globalEval(function() {

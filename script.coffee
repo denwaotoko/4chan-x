@@ -1021,6 +1021,27 @@ Post =
     Post.spoiler = if $('input[name=spoiler]')
       '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
     else ''
+
+    if not Post.multi
+      form = Post.form = $.el 'form',
+        enctype: 'multipart/form-data'
+        method: 'post'
+        action: "http://sys.4chan.org/#{g.BOARD}/post"
+        target: 'iframe'
+        hidden: true
+        innerHTML: "
+          <input name=mode>
+          <input name=resto>
+          <input name=name>
+          <input name=email>
+          <input name=sub>
+          <input name=com>
+          <input name=recaptcha_challenge_field>
+          <input name=recaptcha_response_field>
+          #{Post.spoiler}
+        "
+      $.add d.body, form
+
     $('#recaptcha_response_field').removeAttribute 'id'
     holder = $ '#recaptcha_challenge_field_holder'
     $.on holder, 'DOMNodeInserted', Post.captchaNode
@@ -1173,18 +1194,20 @@ Post =
   file: ->
     multiple = if Post.multi then 'multiple' else ''
     fileDiv = $ '#fileDiv', Post.qr
-    fileDiv.innerHTML = "<input type=file #{multiple}>"
+    fileDiv.innerHTML = "<input type=file name=upfile #{multiple}>"
     $.on $('input', fileDiv), 'change', Post.pushFile
 
   rmFile: ->
     $.rm @parentNode
 
   share: ->
-    {qr} = Post
+    {qr, form} = Post
     unless Post.captchas.length
       return alert 'You forgot to type in the verification.'
 
-    o = {}
+    o =
+      resto: Post.resto
+      mode: 'regist'
     for el in $$ '[name]', qr
       o[el.name] = el.value
 
@@ -1193,31 +1216,26 @@ Post =
       return alert 'Error: No text entered.'
 
     if img
-      $('input', img.parentNode).form = 'qr_form'
+      img.dataset.submit = true
       if Post.multi
-        o.upfile = atobimg.src.splilt(',')[1]
+        o.upfile = atob img.src.splilt(',')[1]
+      else
+        $.add form, $('input', img.parentNode)
 
     captcha = Post.captchas.shift()
+    o.recaptcha_challenge_field = captcha.challenge
+    o.recaptcha_response_field  = captcha.response
     Post.stats()
 
     Post.sage = post.email is 'sage'
 
-    if not Post.multi
-      return $('form', qr).submit()
-
-    postMessage {
-      mode: 'regist'
-      resto: Post.resto
-      recaptcha_challenge_field: captcha.challenge
-      recaptcha_response_field:  captcha.response
-      name:  $('#name',  qr).value
-      email: $('#email', qr).value
-      sub:   $('#sub',   qr).value
-      spoiler: $('#spoiler', qr)?.checked
-      com:    com
-      upfile: upfile
-      to: 'sys'
-    }, '*'
+    if Post.multi
+      o.to = 'sys'
+      postMessage o, '*'
+    else
+      for name, value of o
+        form[name].value = value
+      form.submit()
 
   sys: ->
     $.globalEval ->
