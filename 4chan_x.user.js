@@ -1624,7 +1624,7 @@
       }
       el = Post.el;
       $('textarea', el).value = '';
-      if (img = $('img[form]', el)) $.rm(img.parentNode);
+      if (img = $('img[data-submit]', el)) $.rm(img.parentNode);
       if (conf['Cooldown']) return Post.cooldown();
     },
     cooldown: function() {

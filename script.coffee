@@ -1278,7 +1278,7 @@ Post =
       return
     {el} = Post
     $('textarea', el).value = ''
-    if img = $ 'img[form]', el
+    if img = $ 'img[data-submit]', el
       $.rm img.parentNode
     Post.cooldown() if conf['Cooldown']
 
