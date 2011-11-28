@@ -1027,7 +1027,7 @@ Post =
       $.on window, 'storage', (e) -> Post.cooldown() if e.key is "#{NAMESPACE}cooldown/#{g.BOARD}"
     Post.spoiler =
       if $('input[name=spoiler]')
-        '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
+        '<label>[<input name=spoiler type=checkbox>Spoiler Image?]</label>'
       else
         ''
 
@@ -1121,7 +1121,7 @@ Post =
       return
     if e.keyCode is 13 and v
       Post.captchaSet.call @
-      Post.share()
+      Post.submit()
 
   dialog: (link) ->
     #<img src=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41Ljg3O4BdAAAAXUlEQVQ4T2NgoAH4DzQTHyZoJckGENJASB6nc9GdCjdo6tSptkCsCPUqVgNAmtFtxiYGUkO0QrBibOqJtWkIGYDTqTgSGOnRiGYQ3mRLKBFhjUZiNCGrIZg3aKsAAGu4rTMFLFBMAAAAAElFTkSuQmCC>
@@ -1143,9 +1143,9 @@ Post =
       <div id=fileDiv></div>
       <ul id=items></ul>
       <div>
-        <button id=share>Share</button>
-        <label>autoshare<input id=autoshare type=checkbox></label>
+        <button id=submit>Submit</button>
         #{Post.spoiler}
+        <label><input id=autosubmit type=checkbox>autosubmit</label>
       </div>
     </div>
     "
@@ -1161,7 +1161,7 @@ Post =
     Post.file()
     Post.cooldown() if conf['cooldown']
     $.on $('.close', qr), 'click', Post.rm
-    $.on $('#share', qr), 'click', Post.share
+    $.on $('#submit', qr), 'click', Post.submit
     $.on $('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown
     $.on $('img', qr), 'click', Post.captchaReload
     Post.stats()
@@ -1215,8 +1215,9 @@ Post =
           return
 
         item = $.el 'li',
-          innerHTML: '<a class=close>X</a><img>'
+          innerHTML: '<a class=close>X</a><img><input type=file>'
         $.on $('a', item), 'click', Post.rmFile
+        $.on $('input', item), 'change', Post.fileChange
         $.add items, item
         if not g.XHR2
           $.add item, self
@@ -1230,6 +1231,17 @@ Post =
     Post.stats()
     Post.file()
 
+  fileChange: ->
+    file = @files[0]
+    if file.size > Post.MAX_FILE_SIZE
+      alert 'Error: File too large.'
+      return
+    fr = new FileReader()
+    img = $ 'img', @parentNode
+    fr.onload = (e) ->
+      img.src = e.target.result
+    fr.readAsDataURL file
+
   file: ->
     multiple = if g.XHR2 then 'multiple' else ''
     fileDiv = $ '#fileDiv', Post.qr
@@ -1239,7 +1251,7 @@ Post =
   rmFile: ->
     $.rm @parentNode
 
-  share: (e) ->
+  submit: (e) ->
     {qr, form} = Post
 
     unless captcha = Post.captchaGet()
@@ -1356,9 +1368,9 @@ Post =
       return window.location = url
     if error
       if error is 'Error: Duplicate file entry detected.'
-        setTimeout Post.share, 1000
+        setTimeout Post.submit, 1000
       else if textContent is 'You seem to have mistyped the verification.'
-        setTimeout Post.share, 1000
+        setTimeout Post.submit, 1000
       else
         $('#autohide', qr).checked = false
         alert error
@@ -1392,7 +1404,7 @@ Post =
       $.extend b,
         textContent: 'Submit'
         disabled: false
-      Post.share() if $('#autoshare', qr).checked
+      Post.submit() if $('#autosubmit', qr).checked
 
 threading =
   init: ->

@@ -1379,7 +1379,7 @@
           }
         });
       }
-      Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
+      Post.spoiler = $('input[name=spoiler]') ? '<label>[<input name=spoiler type=checkbox>Spoiler Image?]</label>' : '';
       if (!g.XHR2) {
         form = Post.form = $.el('form', {
           enctype: 'multipart/form-data',
@@ -1462,12 +1462,12 @@
       }
       if (e.keyCode === 13 && v) {
         Post.captchaSet.call(this);
-        return Post.share();
+        return Post.submit();
       }
     },
     dialog: function(link) {
       var c, m, qr;
-      qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <div id=fileDiv></div>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
+      qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <div id=fileDiv></div>      <ul id=items></ul>      <div>        <button id=submit>Submit</button>        " + Post.spoiler + "        <label><input id=autosubmit type=checkbox>autosubmit</label>      </div>    </div>    ");
       c = d.cookie;
       $('#name', qr).value = (m = c.match(/4chan_name=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       $('#email', qr).value = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
@@ -1480,7 +1480,7 @@
       Post.file();
       if (conf['cooldown']) Post.cooldown();
       $.on($('.close', qr), 'click', Post.rm);
-      $.on($('#share', qr), 'click', Post.share);
+      $.on($('#submit', qr), 'click', Post.submit);
       $.on($('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown);
       $.on($('img', qr), 'click', Post.captchaReload);
       Post.stats();
@@ -1537,9 +1537,10 @@
           return;
         }
         item = $.el('li', {
-          innerHTML: '<a class=close>X</a><img>'
+          innerHTML: '<a class=close>X</a><img><input type=file>'
         });
         $.on($('a', item), 'click', Post.rmFile);
+        $.on($('input', item), 'change', Post.fileChange);
         $.add(items, item);
         if (!g.XHR2) $.add(item, self);
         fr = new FileReader();
@@ -1556,6 +1557,20 @@
       Post.stats();
       return Post.file();
     },
+    fileChange: function() {
+      var file, fr, img;
+      file = this.files[0];
+      if (file.size > Post.MAX_FILE_SIZE) {
+        alert('Error: File too large.');
+        return;
+      }
+      fr = new FileReader();
+      img = $('img', this.parentNode);
+      fr.onload = function(e) {
+        return img.src = e.target.result;
+      };
+      return fr.readAsDataURL(file);
+    },
     file: function() {
       var fileDiv, multiple;
       multiple = g.XHR2 ? 'multiple' : '';
@@ -1566,7 +1581,7 @@
     rmFile: function() {
       return $.rm(this.parentNode);
     },
-    share: function(e) {
+    submit: function(e) {
       var captcha, el, form, img, name, o, op, qr, value, _i, _len, _ref;
       qr = Post.qr, form = Post.form;
       if (!(captcha = Post.captchaGet())) {
@@ -1699,9 +1714,9 @@
       if (url) return window.location = url;
       if (error) {
         if (error === 'Error: Duplicate file entry detected.') {
-          setTimeout(Post.share, 1000);
+          setTimeout(Post.submit, 1000);
         } else if (textContent === 'You seem to have mistyped the verification.') {
-          setTimeout(Post.share, 1000);
+          setTimeout(Post.submit, 1000);
         } else {
           $('#autohide', qr).checked = false;
           alert(error);
@@ -1739,7 +1754,7 @@
           textContent: 'Submit',
           disabled: false
         });
-        if ($('#autoshare', qr).checked) return Post.share();
+        if ($('#autosubmit', qr).checked) return Post.submit();
       }
     }
   };
