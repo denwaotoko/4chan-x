@@ -1507,6 +1507,25 @@
       Post.captchaReload();
       return Post.stats();
     },
+    captchaGet: function() {
+      var captcha, captchas, cutoff, el, v;
+      captchas = $.get('captchas', []);
+      cutoff = Date.now() - 5 * HOUR + 5 * MINUTE;
+      while (captcha = captchas.shift()) {
+        if (captcha.time > cutoff) break;
+      }
+      $.set('captchas', captchas);
+      if (!captcha) {
+        el = $('#recaptcha_response_field', Post.qr);
+        if (v = el.value) {
+          el.value = '';
+          captcha = Post.captcha;
+          captcha.response = v;
+          Post.captchaReload();
+        }
+      }
+      return captcha;
+    },
     pushFile: function() {
       var file, items, self, _fn, _i, _len, _ref;
       self = this;
@@ -1547,25 +1566,6 @@
     },
     rmFile: function() {
       return $.rm(this.parentNode);
-    },
-    captchaGet: function() {
-      var captcha, captchas, cutoff, el, v;
-      captchas = $.get('captchas', []);
-      cutoff = Date.now() - 5 * HOUR + 5 * MINUTE;
-      while (captcha = captchas.shift()) {
-        if (captcha.time > cutoff) break;
-      }
-      $.set('captchas', captchas);
-      if (!captcha) {
-        el = $('#recaptcha_response_field', Post.qr);
-        if (v = el.value) {
-          el.value = '';
-          captcha = Post.captcha;
-          captcha.response = v;
-          Post.captchaReload();
-        }
-      }
-      return captcha;
     },
     share: function(e) {
       var captcha, el, form, img, name, o, op, qr, value, _i, _len, _ref;

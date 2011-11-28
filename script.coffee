@@ -1188,6 +1188,24 @@ Post =
     Post.captchaReload()
     Post.stats()
 
+  captchaGet: ->
+    captchas = $.get 'captchas', []
+    cutoff = Date.now() - 5*HOUR + 5*MINUTE
+    while captcha = captchas.shift()
+      if captcha.time > cutoff
+        break
+    $.set 'captchas', captchas
+
+    if not captcha
+      el = $ '#recaptcha_response_field', Post.qr
+      if v = el.value
+        el.value = ''
+        {captcha} = Post
+        captcha.response = v
+        Post.captchaReload()
+
+    captcha
+
   pushFile: ->
     self = @
     items = $ '#items', Post.qr
@@ -1221,24 +1239,6 @@ Post =
 
   rmFile: ->
     $.rm @parentNode
-
-  captchaGet: ->
-    captchas = $.get 'captchas', []
-    cutoff = Date.now() - 5*HOUR + 5*MINUTE
-    while captcha = captchas.shift()
-      if captcha.time > cutoff
-        break
-    $.set 'captchas', captchas
-
-    if not captcha
-      el = $ '#recaptcha_response_field', Post.qr
-      if v = el.value
-        el.value = ''
-        {captcha} = Post
-        captcha.response = v
-        Post.captchaReload()
-
-    captcha
 
   share: (e) ->
     {qr, form} = Post
