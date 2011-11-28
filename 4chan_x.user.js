@@ -1430,6 +1430,7 @@
       var i, id, qr, root, s, selection, ss, ta, text, v, _ref;
       e.preventDefault();
       qr = Post.qr || Post.dialog(this);
+      $('#autohide', qr).checked = false;
       id = this.textContent;
       text = ">>" + id + "\n";
       selection = getSelection();
@@ -1740,32 +1741,6 @@
       l = text.length;
       ta.setSelectionRange(l, l);
       return ta.focus();
-    },
-    quote: function(e, blank) {
-      var bq, i, id, qr, s, sel, ss, ta, text, tid, v, _base, _ref, _ref2;
-      if (e != null) e.preventDefault();
-      tid = (_ref = $.x('ancestor::div[@class="thread"]/div', this)) != null ? _ref.id : void 0;
-      id = this.textContent;
-      text = ">>" + id + "\n";
-      sel = getSelection();
-      bq = $.x('ancestor::blockquote', sel.anchorNode);
-      if (id === ((_ref2 = $.x('preceding-sibling::input', bq)) != null ? _ref2.name : void 0)) {
-        if (s = sel.toString().replace(/\n/g, '\n>')) text += ">" + s + "\n";
-      }
-      qr = QR.qr;
-      if (!qr) {
-        QR.dialog(text, tid);
-        return;
-      }
-      $('#autohide', qr).checked = false;
-      ta = $('textarea', qr);
-      v = ta.value;
-      ss = ta.selectionStart;
-      ta.value = v.slice(0, ss) + text + v.slice(ss);
-      i = ss + text.length;
-      ta.setSelectionRange(i, i);
-      ta.focus();
-      return (_base = $('[name=resto]', qr)).value || (_base.value = tid);
     },
     receive: function(data) {
       var href, qr, row, textContent, _ref, _ref2;

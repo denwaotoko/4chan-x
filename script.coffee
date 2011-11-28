@@ -1084,6 +1084,7 @@ Post =
   quote: (e) ->
     e.preventDefault()
     qr = Post.qr or Post.dialog @
+    $('#autohide', qr).checked = false
 
     id = @textContent
     text = ">>#{id}\n"
@@ -1423,29 +1424,6 @@ QR =
     l = text.length
     ta.setSelectionRange l, l
     ta.focus()
-  quote: (e, blank) ->
-    e?.preventDefault()
-    tid = $.x('ancestor::div[@class="thread"]/div', @)?.id
-    id = @textContent
-    text = ">>#{id}\n"
-    sel = getSelection()
-    bq = $.x('ancestor::blockquote', sel.anchorNode)
-    if id == $.x('preceding-sibling::input', bq)?.name
-      if s = sel.toString().replace /\n/g, '\n>'
-        text += ">#{s}\n"
-    {qr} = QR
-    if not qr
-      QR.dialog text, tid
-      return
-    $('#autohide', qr).checked = false
-    ta = $ 'textarea', qr
-    v  = ta.value
-    ss = ta.selectionStart
-    ta.value = v[0...ss] + text + v[ss..]
-    i = ss + text.length
-    ta.setSelectionRange i, i
-    ta.focus()
-    $('[name=resto]', qr).value or= tid
   receive: (data) ->
     $('iframe[name=iframe]').src = 'about:blank'
     {qr} = QR
