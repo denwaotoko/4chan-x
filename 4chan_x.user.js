@@ -1684,8 +1684,14 @@
       if (!Post.multi) $('#iframe').src = 'about:blank';
       error = data.error;
       if (error) {
-        $('#autohide', qr).checked = false;
-        alert(error);
+        if (error === 'Error: Duplicate file entry detected.') {
+          setTimeout(Post.share, 1000);
+        } else if (textContent === 'You seem to have mistyped the verification.') {
+          setTimeout(Post.share, 1000);
+        } else {
+          $('#autohide', qr).checked = false;
+          alert(error);
+        }
         return;
       }
       if (img = $('img[data-submit]', qr)) $.rm(img.parentNode);
@@ -1699,6 +1705,9 @@
         $.set("cooldown/" + g.BOARD, cooldown);
         return Post.cooldown();
       }
+    },
+    messageOP: function(data) {
+      return window.location = data.url;
     },
     cooldown: function() {
       var b, cooldown, n, now, qr;
@@ -1725,36 +1734,6 @@
   };
 
   QR = {
-    receive: function(data) {
-      var href, qr, row, textContent, _ref, _ref2;
-      $('iframe[name=iframe]').src = 'about:blank';
-      qr = QR.qr;
-      row = (_ref = $('#files input[form]', qr)) != null ? _ref.parentNode : void 0;
-      data = JSON.parse(data);
-      textContent = data.textContent, href = data.href;
-      if (QR.op) {
-        window.location = href;
-        return;
-      }
-      if (textContent) {
-        $.extend($('a.error', qr), data);
-        if (textContent === 'Error: Duplicate file entry detected.') {
-          if (row) $.rm(row);
-          QR.stats();
-          setTimeout(QR.submit, 1000);
-        } else if (textContent === 'You seem to have mistyped the verification.') {
-          setTimeout(QR.submit, 1000);
-        }
-        return;
-      }
-      if (row) $.rm(row);
-      QR.stats();
-      if (conf['Persistent QR'] || ((_ref2 = $('#files input', qr)) != null ? _ref2.files.length : void 0)) {
-        return QR.reset();
-      } else {
-        return QR.close();
-      }
-    },
     submit: function(e) {
       var captcha, challenge, el, id, input, op, qr, response;
       qr = QR.qr;

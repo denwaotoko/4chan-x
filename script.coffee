@@ -1339,8 +1339,13 @@ Post =
       $('#iframe').src = 'about:blank'
     {error} = data
     if error
-      $('#autohide', qr).checked = false
-      alert error
+      if error is 'Error: Duplicate file entry detected.'
+        setTimeout Post.share, 1000
+      else if textContent is 'You seem to have mistyped the verification.'
+        setTimeout Post.share, 1000
+      else
+        $('#autohide', qr).checked = false
+        alert error
       return
     if img = $ 'img[data-submit]', qr
       $.rm img.parentNode
@@ -1352,6 +1357,9 @@ Post =
       cooldown = Date.now() + (if Post.sage then 60 else 30)*SECOND
       $.set "cooldown/#{g.BOARD}", cooldown
       Post.cooldown()
+
+  messageOP: (data) ->
+    window.location = data.url
 
   cooldown: ->
     {qr} = Post
@@ -1377,30 +1385,6 @@ QR =
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
-  receive: (data) ->
-    $('iframe[name=iframe]').src = 'about:blank'
-    {qr} = QR
-    row = $('#files input[form]', qr)?.parentNode
-    data = JSON.parse data
-    {textContent, href} = data
-    if QR.op
-      window.location = href
-      return
-    if textContent
-      $.extend $('a.error', qr), data
-      if textContent is 'Error: Duplicate file entry detected.'
-        $.rm row if row
-        QR.stats()
-        setTimeout QR.submit, 1000
-      else if textContent is 'You seem to have mistyped the verification.'
-        setTimeout QR.submit, 1000
-      return
-    $.rm row if row
-    QR.stats()
-    if conf['Persistent QR'] or $('#files input', qr)?.files.length
-      QR.reset()
-    else
-      QR.close()
   submit: (e) ->
     {qr} = QR
     #XXX e is undefined if method is called explicitly, eg, from auto posting
