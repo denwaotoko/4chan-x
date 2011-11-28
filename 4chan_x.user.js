@@ -1475,6 +1475,7 @@
       }
       Post.captchaImg();
       Post.file();
+      if (conf['cooldown']) Post.cooldown();
       $.on($('.close', qr), 'click', Post.rm);
       $.on($('#share', qr), 'click', Post.share);
       $.on($('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown);
@@ -1674,7 +1675,7 @@
       return postMessage(data, '*');
     },
     message: function(data) {
-      var error, img, qr;
+      var cooldown, error, img, qr;
       qr = Post.qr;
       if (!Post.multi) $('#iframe').src = 'about:blank';
       error = data.error;
@@ -1689,63 +1690,37 @@
       } else {
         Post.rm();
       }
-      if (conf['Cooldown']) return Post.cooldown();
+      if (conf['Cooldown']) {
+        cooldown = Date.now() + (Post.sage ? 60 : 30) * SECOND;
+        $.set("cooldown/" + g.BOARD, cooldown);
+        return Post.cooldown();
+      }
     },
     cooldown: function() {
-      var button, el, n;
-      el = Post.el;
-      button = $('button', el);
-      if (!(n = parseInt(button.textContent))) {
-        n = 1 + (Post.sage ? 60 : 30);
-        button.disabled = true;
-      }
-      if (--n) {
-        button.textContent = n;
-        return setTimeout(Post.cooldown, 1000);
-      } else {
-        button.disabled = false;
-        button.textContent = 'Submit';
-        if ($("#autoshare", el).checked) return Post.share();
-      }
-    }
-  };
-
-  QR = {
-    cooldown: function() {
-      var b, cooldown, n, now;
-      if (!(g.REPLY && QR.qr)) return;
+      var b, cooldown, n, now, qr;
+      qr = Post.qr;
+      if (!qr) return;
       cooldown = $.get("cooldown/" + g.BOARD, 0);
       now = Date.now();
       n = Math.ceil((cooldown - now) / 1000);
-      b = $('form button', QR.qr);
+      b = $('button', qr);
       if (n > 0) {
         $.extend(b, {
           textContent: n,
           disabled: true
         });
-        return setTimeout(QR.cooldown, 1000);
+        return setTimeout(Post.cooldown, 1000);
       } else {
         $.extend(b, {
           textContent: 'Submit',
           disabled: false
         });
-        if ($('#autopost', QR.qr).checked) return QR.submit();
+        if ($('#autoshare', qr).checked) return Post.share();
       }
-    },
-    foo: function(old) {
-      var input;
-      input = $.el('input', {
-        type: 'file',
-        name: 'upfile',
-        accept: QR.accept
-      });
-      $.on(input, 'change', QR.change);
-      if (old) {
-        return $.replace(old, file);
-      } else {
-        return $.add($('.wat', QR.qr), input);
-      }
-    },
+    }
+  };
+
+  QR = {
     dialog: function(text, tid) {
       var l, qr, ta;
       if (text == null) text = '';
@@ -1765,19 +1740,6 @@
       l = text.length;
       ta.setSelectionRange(l, l);
       return ta.focus();
-    },
-    keydown: function(e) {
-      var kc, v;
-      kc = e.keyCode;
-      v = this.value;
-      if (kc === 8 && !v) {
-        QR.captchaReload();
-        return;
-      }
-      if (!(e.keyCode === 13 && v)) return;
-      QR.captchaPush(this);
-      e.preventDefault();
-      return QR.submit();
     },
     quote: function(e, blank) {
       var bq, i, id, qr, s, sel, ss, ta, text, tid, v, _base, _ref, _ref2;
@@ -1806,7 +1768,7 @@
       return (_base = $('[name=resto]', qr)).value || (_base.value = tid);
     },
     receive: function(data) {
-      var cooldown, href, qr, row, textContent, _ref, _ref2;
+      var href, qr, row, textContent, _ref, _ref2;
       $('iframe[name=iframe]').src = 'about:blank';
       qr = QR.qr;
       row = (_ref = $('#files input[form]', qr)) != null ? _ref.parentNode : void 0;
@@ -1830,14 +1792,9 @@
       if (row) $.rm(row);
       QR.stats();
       if (conf['Persistent QR'] || ((_ref2 = $('#files input', qr)) != null ? _ref2.files.length : void 0)) {
-        QR.reset();
+        return QR.reset();
       } else {
-        QR.close();
-      }
-      if (conf['Cooldown']) {
-        cooldown = Date.now() + (QR.sage ? 60 : 30) * SECOND;
-        $.set("cooldown/" + g.BOARD, cooldown);
-        return QR.cooldown();
+        return QR.close();
       }
     },
     reset: function() {

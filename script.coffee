@@ -1152,6 +1152,7 @@ Post =
       Post.resto = $.x('ancestor::div[@class="thread"]/div', link).id
     Post.captchaImg()
     Post.file()
+    Post.cooldown() if conf['cooldown']
     $.on $('.close', qr), 'click', Post.rm
     $.on $('#share', qr), 'click', Post.share
     $.on $('#recaptcha_response_field', qr), 'keydown', Post.captchaKeydown
@@ -1342,54 +1343,35 @@ Post =
       $('textarea', qr).value = ''
     else
       Post.rm()
-    Post.cooldown() if conf['Cooldown']
+    if conf['Cooldown']
+      cooldown = Date.now() + (if Post.sage then 60 else 30)*SECOND
+      $.set "cooldown/#{g.BOARD}", cooldown
+      Post.cooldown()
 
   cooldown: ->
-    {el} = Post
-    button = $ 'button', el
-    unless n = parseInt button.textContent
-      n = 1 + if Post.sage then 60 else 30
-      button.disabled = true
+    {qr} = Post
+    return unless qr
 
-    if --n
-      button.textContent = n
+    cooldown = $.get "cooldown/#{g.BOARD}", 0
+    now = Date.now()
+    n = Math.ceil (cooldown - now) / 1000
+
+    b = $ 'button', qr
+    if n > 0
+      $.extend b,
+        textContent: n
+        disabled: true
       setTimeout Post.cooldown, 1000
     else
-      button.disabled = false
-      button.textContent = 'Submit'
-      if $("#autoshare", el).checked
-        Post.share()
+      $.extend b,
+        textContent: 'Submit'
+        disabled: false
+      Post.share() if $('#autoshare', qr).checked
 
 QR =
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
-  cooldown: ->
-    return unless g.REPLY and QR.qr
-    cooldown = $.get "cooldown/#{g.BOARD}", 0
-    now = Date.now()
-    n = Math.ceil (cooldown - now) / 1000
-    b = $ 'form button', QR.qr
-    if n > 0
-      $.extend b,
-        textContent: n
-        disabled: true
-      setTimeout QR.cooldown, 1000
-    else
-      $.extend b,
-        textContent: 'Submit'
-        disabled: false
-      QR.submit() if $('#autopost', QR.qr).checked
-  foo: (old) ->
-    input = $.el 'input',
-      type: 'file'
-      name: 'upfile'
-      accept: QR.accept
-    $.on input, 'change', QR.change
-    if old
-      $.replace old, file
-    else
-      $.add $('.wat', QR.qr), input
   dialog: (text='', tid) ->
     tid or= g.THREAD_ID or ''
     QR.qr = qr = ui.dialog 'qr', 'top: 0; right: 0;', "
@@ -1441,16 +1423,6 @@ QR =
     l = text.length
     ta.setSelectionRange l, l
     ta.focus()
-  keydown: (e) ->
-    kc = e.keyCode
-    v = @value
-    if kc is 8 and not v #backspace, empty
-      QR.captchaReload()
-      return
-    return unless e.keyCode is 13 and v #enter, not empty
-    QR.captchaPush @
-    e.preventDefault()
-    QR.submit() #derpy, but prevents checking for content twice
   quote: (e, blank) ->
     e?.preventDefault()
     tid = $.x('ancestor::div[@class="thread"]/div', @)?.id
@@ -1498,10 +1470,6 @@ QR =
       QR.reset()
     else
       QR.close()
-    if conf['Cooldown']
-      cooldown = Date.now() + (if QR.sage then 60 else 30)*SECOND
-      $.set "cooldown/#{g.BOARD}", cooldown
-      QR.cooldown()
   reset: ->
     {qr} = QR
     c = d.cookie
