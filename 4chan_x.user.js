@@ -1446,9 +1446,11 @@
       return ta.focus();
     },
     stats: function() {
-      var captchas;
+      var captchas, images, qr;
+      qr = Post.qr;
+      images = $$('#items img[src]', qr);
       captchas = $.get('captchas', []);
-      return $('#pstats', Post.qr).textContent = "captchas: " + captchas.length;
+      return $('#pstats', qr).textContent = "" + images.length + " / " + captchas.length;
     },
     captchaKeydown: function(e) {
       var kc, v;
@@ -1613,7 +1615,13 @@
         return;
       }
       $.globalEval(function() {
-        return window.addEventListener('message', function(e) {
+        /*
+              http://code.google.com/p/chromium/issues/detail?id=20773
+              Let content scripts see other frames (instead of them being undefined)
+        
+              To access the parent, we have to break out of the sandbox and evaluate
+              in the global context.
+        */        return window.addEventListener('message', function(e) {
           var data;
           data = e.data;
           if (data.to !== 'Post.message') return;
@@ -1703,36 +1711,6 @@
   };
 
   QR = {
-    stats: function(captchas) {
-      var images, qr;
-      qr = QR.qr;
-      captchas || (captchas = $.get('captchas', []));
-      images = $$('#files input', qr);
-      return $('#qr_stats', qr).textContent = "" + images.length + " / " + captchas.length;
-    },
-    captchaReload: function() {
-      return window.location = 'javascript:Recaptcha.reload()';
-    },
-    change: function(e) {
-      var file, fr, img;
-      file = this.files[0];
-      if (file.size > QR.MAX_FILE_SIZE) {
-        alert('Error: File too large.');
-        QR.foo(this);
-        return;
-      }
-      if (this.parentNode.className === 'wat') QR.attach(this);
-      fr = new FileReader();
-      img = $('img', this.parentNode);
-      fr.onload = function(e) {
-        return img.src = e.target.result;
-      };
-      return fr.readAsDataURL(file);
-    },
-    close: function() {
-      $.rm(QR.qr);
-      return QR.qr = null;
-    },
     cooldown: function() {
       var b, cooldown, n, now;
       if (!(g.REPLY && QR.qr)) return;
@@ -1913,38 +1891,6 @@
           return watcher.watch(op, id);
         }
       }
-    },
-    sys: function() {
-      var recaptcha;
-      $.off(d, 'DOMContentLoaded', QR.sys);
-      if (recaptcha = $('#recaptcha_response_field')) {
-        $.on(recaptcha, 'keydown', QR.keydown);
-        return;
-      }
-      /*
-          http://code.google.com/p/chromium/issues/detail?id=20773
-          Let content scripts see other frames (instead of them being undefined)
-      
-          To access the parent, we have to break out of the sandbox and evaluate
-          in the global context.
-      */
-      return $.globalEval(function() {
-        var data, href, node, textContent, _ref;
-        $ = function(css) {
-          return document.querySelector(css);
-        };
-        if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
-          textContent = node.textContent, href = node.href;
-        } else {
-          node = $('meta');
-          href = node.content.match(/url=(.+)/)[1];
-        }
-        data = JSON.stringify({
-          textContent: textContent,
-          href: href
-        });
-        return parent.postMessage(data, '*');
-      });
     }
   };
 

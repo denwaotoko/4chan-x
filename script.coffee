@@ -1105,8 +1105,10 @@ Post =
     ta.focus()
 
   stats: ->
+    {qr} = Post
+    images = $$ '#items img[src]', qr
     captchas = $.get 'captchas', []
-    $('#pstats', Post.qr).textContent = "captchas: #{captchas.length}"
+    $('#pstats', qr).textContent = "#{images.length} / #{captchas.length}"
 
   captchaKeydown: (e) ->
     kc = e.keyCode
@@ -1277,6 +1279,13 @@ Post =
       $.on recaptcha, 'keydown', Post.keydown
       return
     $.globalEval ->
+      ###
+      http://code.google.com/p/chromium/issues/detail?id=20773
+      Let content scripts see other frames (instead of them being undefined)
+
+      To access the parent, we have to break out of the sandbox and evaluate
+      in the global context.
+      ###
       window.addEventListener('message', (e) ->
         {data} = e
         return unless data.to is 'Post.message'
@@ -1355,29 +1364,6 @@ QR =
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
-  stats: (captchas) ->
-    {qr} = QR
-    captchas or= $.get 'captchas', []
-    images = $$ '#files input', qr
-    $('#qr_stats', qr).textContent = "#{images.length} / #{captchas.length}"
-  captchaReload: ->
-    window.location = 'javascript:Recaptcha.reload()'
-  change: (e) ->
-    file = @files[0]
-    if file.size > QR.MAX_FILE_SIZE
-      alert 'Error: File too large.'
-      QR.foo @
-      return
-    if @parentNode.className is 'wat'
-      QR.attach @
-    fr = new FileReader()
-    img = $ 'img', @parentNode
-    fr.onload = (e) ->
-      img.src = e.target.result
-    fr.readAsDataURL file
-  close: ->
-    $.rm QR.qr
-    QR.qr = null
   cooldown: ->
     return unless g.REPLY and QR.qr
     cooldown = $.get "cooldown/#{g.BOARD}", 0
@@ -1559,28 +1545,6 @@ QR =
       op = $.id id
       if $('img.favicon', op).src is Favicon.empty
         watcher.watch op, id
-  sys: ->
-    $.off d, 'DOMContentLoaded', QR.sys
-    if recaptcha = $ '#recaptcha_response_field' #post reporting
-      $.on recaptcha, 'keydown', QR.keydown
-      return
-    ###
-    http://code.google.com/p/chromium/issues/detail?id=20773
-    Let content scripts see other frames (instead of them being undefined)
-
-    To access the parent, we have to break out of the sandbox and evaluate
-    in the global context.
-    ###
-    $.globalEval ->
-      $ = (css) -> document.querySelector css
-      if node = $('table font b')?.firstChild
-        {textContent, href} = node
-      else
-        node = $ 'meta'
-        href = node.content.match(/url=(.+)/)[1]
-      data = JSON.stringify { textContent, href }
-      parent.postMessage data, '*'
-      #if we're an iframe, parent will blank us
 
 threading =
   init: ->
