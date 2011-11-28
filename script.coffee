@@ -1106,7 +1106,7 @@ Post =
       return
     if e.keyCode is 13
       Post.pushCaptcha.call @
-      Post.share true
+      Post.share()
 
   dialog: (link) ->
     qr = Post.qr = ui.dialog 'post', 'top: 0; right: 0', "
@@ -1201,11 +1201,18 @@ Post =
   rmFile: ->
     $.rm @parentNode
 
-  share: (indirect) ->
+  share: (e) ->
     {qr, form} = Post
 
     if not Post.captchas.length
-      return alert 'You forgot to type in the verification.'
+      if e
+        el = $('#recaptcha_response_field', qr)
+        if el.value
+          Post.pushCaptcha.call el
+        else
+          return alert 'You forgot to type in the verification.'
+      else
+        return alert 'You forgot to type in the verification.'
 
     o =
       resto: Post.resto
@@ -1216,7 +1223,7 @@ Post =
     img = $ '#items img[src]', qr
 
     if not (o.com or img)
-      if indirect
+      if not e
         return
       return alert 'Error: No text entered.'
 
@@ -1322,7 +1329,7 @@ Post =
       button.disabled = false
       button.textContent = 'Submit'
       if $("#autoshare", el).checked
-        Post.share true
+        Post.share()
 
 QR =
   #captcha caching for report form

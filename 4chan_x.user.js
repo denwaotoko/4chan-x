@@ -1448,7 +1448,7 @@
       }
       if (e.keyCode === 13) {
         Post.pushCaptcha.call(this);
-        return Post.share(true);
+        return Post.share();
       }
     },
     dialog: function(link) {
@@ -1530,11 +1530,20 @@
     rmFile: function() {
       return $.rm(this.parentNode);
     },
-    share: function(indirect) {
+    share: function(e) {
       var captcha, el, form, img, name, o, qr, value, _i, _len, _ref;
       qr = Post.qr, form = Post.form;
       if (!Post.captchas.length) {
-        return alert('You forgot to type in the verification.');
+        if (e) {
+          el = $('#recaptcha_response_field', qr);
+          if (el.value) {
+            Post.pushCaptcha.call(el);
+          } else {
+            return alert('You forgot to type in the verification.');
+          }
+        } else {
+          return alert('You forgot to type in the verification.');
+        }
       }
       o = {
         resto: Post.resto,
@@ -1548,7 +1557,7 @@
       delete o.upfile;
       img = $('#items img[src]', qr);
       if (!(o.com || img)) {
-        if (indirect) return;
+        if (!e) return;
         return alert('Error: No text entered.');
       }
       if (img) {
@@ -1667,7 +1676,7 @@
       } else {
         button.disabled = false;
         button.textContent = 'Submit';
-        if ($("#autoshare", el).checked) return Post.share(true);
+        if ($("#autoshare", el).checked) return Post.share();
       }
     }
   };
