@@ -1379,9 +1379,8 @@
           }
         });
       }
-      Post.multi = typeof FormData !== "undefined" && FormData !== null;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
-      if (!Post.multi) {
+      if (!g.XHR2) {
         form = Post.form = $.el('form', {
           enctype: 'multipart/form-data',
           method: 'post',
@@ -1401,7 +1400,7 @@
       $.add(d.body, $.el('iframe', {
         id: 'iframe',
         hidden: true,
-        src: Post.multi ? "http://sys.4chan.org/" + g.BOARD + "/src" : 'about:blank'
+        src: g.XHR2 ? "http://sys.4chan.org/" + g.BOARD + "/src" : 'about:blank'
       }));
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
@@ -1542,7 +1541,7 @@
         });
         $.on($('a', item), 'click', Post.rmFile);
         $.add(items, item);
-        if (!Post.multi) $.add(item, self);
+        if (!g.XHR2) $.add(item, self);
         fr = new FileReader();
         img = $('img', item);
         fr.onload = function(e) {
@@ -1559,7 +1558,7 @@
     },
     file: function() {
       var fileDiv, multiple;
-      multiple = Post.multi ? 'multiple' : '';
+      multiple = g.XHR2 ? 'multiple' : '';
       fileDiv = $('#fileDiv', Post.qr);
       fileDiv.innerHTML = "<input type=file name=upfile " + multiple + " accept='image/*'>";
       return $.on($('input', fileDiv), 'change', Post.pushFile);
@@ -1595,7 +1594,7 @@
       }
       if (img) {
         img.dataset.submit = true;
-        if (Post.multi) {
+        if (g.XHR2) {
           o.upfile = atob(img.src.split(',')[1]);
         } else {
           $.add(form, $('input', img.parentNode));
@@ -1605,7 +1604,7 @@
       o.recaptcha_response_field = captcha.response;
       Post.stats();
       Post.sage = post.email === 'sage';
-      if (Post.multi) {
+      if (g.XHR2) {
         o.to = 'sys';
         postMessage(o, '*');
       } else {
@@ -1642,15 +1641,18 @@
           if (data.to === 'Post.message') return parent.postMessage(data, '*');
         }, false);
       });
-      data = {
-        to: 'Post.message'
-      };
-      if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
-        data.error = node.textContent;
-      } else if (node = $('meta')) {
-        data.url = node.content.match(/url=(.+)/)[1];
+      if (!g.XHR2) {
+        data = {
+          to: 'Post.message'
+        };
+        if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
+          data.error = node.textContent;
+        } else if (node = $('meta')) {
+          data.url = node.content.match(/url=(.+)/)[1];
+        }
+        postMessage(data, '*');
+        return;
       }
-      postMessage(data, '*');
       return $.on(window, 'message', function(e) {
         var bb, fd, i, key, l, to, ui8a, upfile, val;
         data = e.data;
@@ -1692,7 +1694,7 @@
     message: function(data) {
       var cooldown, error, img, qr, url;
       qr = Post.qr;
-      if (!Post.multi) $('#iframe').src = 'about:blank';
+      if (!g.XHR2) $('#iframe').src = 'about:blank';
       error = data.error, url = data.url;
       if (url) return window.location = url;
       if (error) {
@@ -2957,6 +2959,7 @@
   Main = {
     init: function() {
       var cutoff, hiddenThreads, id, lastChecked, now, pathname, temp, timestamp, _ref;
+      g.XHR2 = typeof FormData !== "undefined" && FormData !== null;
       if (location.hostname === 'sys.4chan.org') {
         if (d.body) {
           Post.sys();

@@ -1025,14 +1025,13 @@ Post =
 
     if conf['Cooldown']
       $.on window, 'storage', (e) -> Post.cooldown() if e.key is "#{NAMESPACE}cooldown/#{g.BOARD}"
-    Post.multi = FormData?
     Post.spoiler =
       if $('input[name=spoiler]')
         '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
       else
         ''
 
-    if not Post.multi
+    if not g.XHR2
       form = Post.form = $.el 'form',
         enctype: 'multipart/form-data'
         method: 'post'
@@ -1060,7 +1059,7 @@ Post =
     $.add d.body, $.el 'iframe',
       id: 'iframe'
       hidden: true
-      src: if Post.multi then "http://sys.4chan.org/#{g.BOARD}/src" else 'about:blank'
+      src: if g.XHR2 then "http://sys.4chan.org/#{g.BOARD}/src" else 'about:blank'
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
@@ -1219,7 +1218,7 @@ Post =
           innerHTML: '<a class=close>X</a><img>'
         $.on $('a', item), 'click', Post.rmFile
         $.add items, item
-        if not Post.multi
+        if not g.XHR2
           $.add item, self
 
         fr = new FileReader()
@@ -1232,7 +1231,7 @@ Post =
     Post.file()
 
   file: ->
-    multiple = if Post.multi then 'multiple' else ''
+    multiple = if g.XHR2 then 'multiple' else ''
     fileDiv = $ '#fileDiv', Post.qr
     fileDiv.innerHTML = "<input type=file name=upfile #{multiple} accept='image/*'>"
     $.on $('input', fileDiv), 'change', Post.pushFile
@@ -1265,7 +1264,7 @@ Post =
 
     if img
       img.dataset.submit = true
-      if Post.multi
+      if g.XHR2
         o.upfile = atob img.src.split(',')[1]
       else
         $.add form, $('input', img.parentNode)
@@ -1276,7 +1275,7 @@ Post =
 
     Post.sage = post.email is 'sage'
 
-    if Post.multi
+    if g.XHR2
       o.to = 'sys'
       postMessage o, '*'
     else
@@ -1296,6 +1295,7 @@ Post =
     if recaptcha = $ '#recaptcha_response_field' #post reporting
       $.on recaptcha, 'keydown', Post.keydown
       return
+
     $.globalEval ->
       ###
       http://code.google.com/p/chromium/issues/detail?id=20773
@@ -1310,15 +1310,15 @@ Post =
           parent.postMessage data, '*'
       , false)
 
-    #code for non Post.multi
-    data = to: 'Post.message'
-    if node = $('table font b')?.firstChild
-      data.error = node.textContent
-    else if node = $ 'meta'
-      data.url = node.content.match(/url=(.+)/)[1]
-    postMessage data, '*'
-    #if we're an iframe, parent will blank us
-    #/end non Post.multi
+    if not g.XHR2
+      data = to: 'Post.message'
+      if node = $('table font b')?.firstChild
+        data.error = node.textContent
+      else if node = $ 'meta'
+        data.url = node.content.match(/url=(.+)/)[1]
+      postMessage data, '*'
+      #if we're an iframe, parent will blank us
+      return
 
     $.on window, 'message', (e) ->
       {data} = e
@@ -1349,7 +1349,7 @@ Post =
 
   message: (data) ->
     {qr} = Post
-    if not Post.multi
+    if not g.XHR2
       $('#iframe').src = 'about:blank'
     {error, url} = data
     if url
@@ -2345,6 +2345,7 @@ firstRun =
 
 Main =
   init: ->
+    g.XHR2 = FormData?
     if location.hostname is 'sys.4chan.org'
       if d.body
         Post.sys()
