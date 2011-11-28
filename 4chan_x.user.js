@@ -3281,41 +3281,13 @@
       #files > input {\
         display: block;\
       }\
-      #qr {\
-        position: fixed;\
-      }\
-      #qr .close, #qr #autohide {\
-        float: right;\
-      }\
       #qr > .move {\
         text-align: right;\
-      }\
-      #qr .autohide > input {\
-        width: 90px;\
-      }\
-      #qr #autopost {\
-        width: auto;\
-      }\
-      #qr #recaptcha_response_field {\
-        width: 100%;\
-      }\
-      #qr form {\
-        margin: 0;\
-      }\
-      #qr .autohide {\
-        clear: both;\
-      }\
-      #qr:not(:hover) #autohide:checked ~ .autohide {\
-        height: 0;\
-        overflow: hidden;\
       }\
       #qr textarea {\
         border: 0;\
         height: 150px;\
         width: 100%;\
-      }\
-      #qr #captcha {\
-        position: relative;\
       }\
       #qr #files {\
         width: 300px;\
@@ -3323,13 +3295,6 @@
         overflow: auto;\
         margin: 0;\
         padding: 0;\
-      }\
-      #qr #files li {\
-        position: relative;\
-        display: inline-block;\
-        width: 100px;\
-        height: 100px;\
-        overflow: hidden;\
       }\
       #qr #files a {\
         position: absolute;\
@@ -3356,9 +3321,6 @@
         left: 0;\
         max-height: 100px;\
         max-width:  100px;\
-      }\
-      #qr input[name=resto] {\
-        width: 80px;\
       }\
       #qr button + input[type=file] {\
         position: absolute;\
@@ -3391,15 +3353,20 @@
       #post li {\
         display: inline-block;\
         position: relative;\
+        overflow: hidden;\
+        width: 100px;\
+        height: 100px;\
       }\
       #post #items .close {\
         position: absolute;\
         color: red;\
         font-size: 14pt;\
+        z-index: 1;\
       }\
       #items img {\
         max-height: 100px;\
         max-width: 100px;\
+        position: absolute;\
       }\
       #post #foo input {\
         width: 97px;\
@@ -3413,8 +3380,13 @@
       #post #recaptcha_response_field {\
         width: 100%;\
       }\
-      #post input[type=file] {\
-        width: 100%;\
+      #post #items input {\
+        /* cannot use `display: none;`\
+        https://bugs.webkit.org/show_bug.cgi?id=58208\
+        http://code.google.com/p/chromium/issues/detail?id=78961\
+        */\
+        font-size: 100px;\
+        opacity: 0;\
       }\
       #post .close, #post #autohide {\
         float: right;\
