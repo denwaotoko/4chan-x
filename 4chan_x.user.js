@@ -61,7 +61,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, QR, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, Post, SECOND, Time, anonymize, conf, config, d, expandComment, expandThread, filter, firstRun, flatten, g, getTitle, imgExpand, imgGif, imgHover, imgPreloading, key, keybinds, log, nav, options, quoteBacklink, quoteInline, quoteOP, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unread, updater, val, watcher;
   var __slice = Array.prototype.slice;
 
   config = {
@@ -1568,7 +1568,7 @@
       return captcha;
     },
     share: function(e) {
-      var captcha, el, form, img, name, o, qr, value, _i, _len, _ref;
+      var captcha, el, form, img, name, o, op, qr, value, _i, _len, _ref;
       qr = Post.qr, form = Post.form;
       if (!(captcha = Post.captchaGet())) {
         if (e) alert('You forgot to type in the verification.');
@@ -1587,6 +1587,10 @@
       img = $('#items img[src]', qr);
       if (!(o.com || img)) {
         if (e) alert('Error: No text entered.');
+        return;
+      }
+      if ($('button', qr).disabled) {
+        $('#autopost', qr).checked = true;
         return;
       }
       if (img) {
@@ -1611,7 +1615,13 @@
         }
         form.submit();
       }
-      if (conf['Auto Hide QR']) return $('#autohide', qr).checked = true;
+      if (conf['Auto Hide QR']) $('#autohide', qr).checked = true;
+      if (conf['Thread Watcher'] && conf['Auto Watch Reply']) {
+        op = $.id(o.resto);
+        if ($('img.favicon', op).src === Favicon.empty) {
+          return watcher.watch(op, id);
+        }
+      }
     },
     sys: function() {
       var data, node, recaptcha, _ref;
@@ -1729,48 +1739,6 @@
           disabled: false
         });
         if ($('#autoshare', qr).checked) return Post.share();
-      }
-    }
-  };
-
-  QR = {
-    submit: function(e) {
-      var captcha, challenge, el, id, input, op, qr, response;
-      qr = QR.qr;
-      if ($('textarea', qr).value || $('#files', qr).childNodes.length) {
-        if ($('form button', qr).disabled) {
-          $('#autopost', qr).checked = true;
-          return;
-        }
-      } else {
-        if (e) {
-          alert('Error: No text entered.');
-          e.preventDefault();
-        }
-        return;
-      }
-      $('.error', qr).textContent = '';
-      if (e && (el = $('#recaptcha_response_field', qr)).value) QR.captchaPush(el);
-      if (!(captcha = QR.captchaShift())) {
-        alert('You forgot to type in the verification.');
-        if (e != null) e.preventDefault();
-        return;
-      }
-      challenge = captcha.challenge, response = captcha.response;
-      $('#challenge', qr).value = challenge;
-      $('#response', qr).value = response;
-      if (conf['Auto Hide QR']) $('#autohide', qr).checked = true;
-      if (input = $('#files input', qr)) input.setAttribute('form', 'qr_form');
-      if (!e) $('#qr_form', qr).submit();
-      QR.sage = /sage/i.test($('[name=email]', qr).value);
-      id = $('input[name=resto]', qr).value;
-      QR.op = !id;
-      if (QR.op) $('[name=email]', qr).value = 'noko';
-      if (conf['Thread Watcher'] && conf['Auto Watch Reply']) {
-        op = $.id(id);
-        if ($('img.favicon', op).src === Favicon.empty) {
-          return watcher.watch(op, id);
-        }
       }
     }
   };

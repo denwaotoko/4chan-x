@@ -1016,6 +1016,9 @@ options =
     $('#backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
 
 Post =
+  #captcha caching for report form
+  #report queueing
+  #check if captchas can be reused on eg dup file error
   init: ->
     #can't reply in some stickies, recaptcha may be blocked, eg by noscript
     return unless $('form[name=post]') and $('#recaptcha_response_field')
@@ -1256,6 +1259,10 @@ Post =
       alert 'Error: No text entered.' if e
       return
 
+    if $('button', qr).disabled
+      $('#autopost', qr).checked = true
+      return
+
     if img
       img.dataset.submit = true
       if Post.multi
@@ -1279,6 +1286,11 @@ Post =
 
     if conf['Auto Hide QR']
       $('#autohide', qr).checked = true
+
+    if conf['Thread Watcher'] and conf['Auto Watch Reply']
+      op = $.id o.resto
+      if $('img.favicon', op).src is Favicon.empty
+        watcher.watch op, id
 
   sys: ->
     if recaptcha = $ '#recaptcha_response_field' #post reporting
@@ -1380,45 +1392,6 @@ Post =
         textContent: 'Submit'
         disabled: false
       Post.share() if $('#autoshare', qr).checked
-
-QR =
-  #captcha caching for report form
-  #report queueing
-  #check if captchas can be reused on eg dup file error
-  submit: (e) ->
-    {qr} = QR
-    #XXX e is undefined if method is called explicitly, eg, from auto posting
-    if $('textarea', qr).value or $('#files', qr).childNodes.length
-      if $('form button', qr).disabled
-        $('#autopost', qr).checked = true
-        return
-    else
-      if e
-        alert 'Error: No text entered.'
-        e.preventDefault()
-      return
-    $('.error', qr).textContent = ''
-    if e and (el = $('#recaptcha_response_field', qr)).value
-      QR.captchaPush el
-    if not captcha = QR.captchaShift()
-      alert 'You forgot to type in the verification.'
-      e?.preventDefault()
-      return
-    {challenge, response} = captcha
-    $('#challenge', qr).value = challenge
-    $('#response',  qr).value = response
-    $('#autohide', qr).checked = true if conf['Auto Hide QR']
-    if input = $ '#files input', qr
-      input.setAttribute 'form', 'qr_form'
-    $('#qr_form', qr).submit() if not e
-    QR.sage = /sage/i.test $('[name=email]', qr).value
-    id = $('input[name=resto]', qr).value
-    QR.op = not id
-    $('[name=email]', qr).value = 'noko' if QR.op
-    if conf['Thread Watcher'] and conf['Auto Watch Reply']
-      op = $.id id
-      if $('img.favicon', op).src is Favicon.empty
-        watcher.watch op, id
 
 threading =
   init: ->
