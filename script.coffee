@@ -1017,10 +1017,17 @@ options =
 
 Post =
   init: ->
+    #can't reply in some stickies, recaptcha may be blocked, eg by noscript
+    return unless $('form[name=post]') and $('#recaptcha_response_field')
+
+    if conf['Cooldown']
+      $.on window, 'storage', (e) -> Post.cooldown() if e.key is "#{NAMESPACE}cooldown/#{g.BOARD}"
     Post.multi = FormData?
-    Post.spoiler = if $('input[name=spoiler]')
-      '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
-    else ''
+    Post.spoiler =
+      if $('input[name=spoiler]')
+        '<label>Spoiler Image?<input name=spoiler type=checkbox></label>'
+      else
+        ''
 
     if not Post.multi
       form = Post.form = $.el 'form',
@@ -1051,12 +1058,14 @@ Post =
       id: 'iframe'
       hidden: true
       src: if Post.multi then "http://sys.4chan.org/#{g.BOARD}/src" else 'about:blank'
-    Post.captchas = []
     Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value
     g.callbacks.push Post.node
 
-    if conf['Persistent QR']
+    if g.REPLY and conf['Persistent QR']
       Post.dialog()
+      #$('textarea', QR.qr).blur()
+      if conf['Auto Hide QR']
+        $('#autohide', Post.qr).checked = true
 
   captchaNode: (e) ->
     Post.captcha =
@@ -1096,7 +1105,8 @@ Post =
     ta.focus()
 
   stats: ->
-    $('#pstats', Post.qr).textContent = "captchas: #{Post.captchas.length}"
+    captchas = $.get 'captchas', []
+    $('#pstats', Post.qr).textContent = "captchas: #{captchas.length}"
 
   captchaKeydown: (e) ->
     kc = e.keyCode
@@ -1104,8 +1114,8 @@ Post =
     if kc is 8 and not v #backspace, empty
       Post.captchaReload()
       return
-    if e.keyCode is 13
-      Post.pushCaptcha.call @
+    if e.keyCode is 13 and v
+      Post.captchaSet.call @
       Post.share()
 
   dialog: (link) ->
@@ -1155,15 +1165,15 @@ Post =
   captchaReload: ->
     window.location = 'javascript:Recaptcha.reload()'
 
-  pushCaptcha: ->
-    unless response = @value
-      alert 'You forgot to type in the verification.'
-      return
+  captchaSet: ->
+    response = @value
     @value = ''
 
+    captchas = $.get 'captchas', []
     {captcha} = Post
     captcha.response = response
-    Post.captchas.push captcha
+    captchas.push captcha
+    $.set 'captchas', captchas
     Post.captchaReload()
     Post.stats()
 
@@ -1195,24 +1205,36 @@ Post =
   file: ->
     multiple = if Post.multi then 'multiple' else ''
     fileDiv = $ '#fileDiv', Post.qr
-    fileDiv.innerHTML = "<input type=file name=upfile #{multiple}>"
+    fileDiv.innerHTML = "<input type=file name=upfile #{multiple} accept='image/*'>"
     $.on $('input', fileDiv), 'change', Post.pushFile
 
   rmFile: ->
     $.rm @parentNode
 
+  captchaGet: ->
+    captchas = $.get 'captchas', []
+    cutoff = Date.now() - 5*HOUR + 5*MINUTE
+    while captcha = captchas.shift()
+      if captcha.time > cutoff
+        break
+    $.set 'captchas', captchas
+
+    if not captcha
+      el = $ '#recaptcha_response_field', Post.qr
+      if v = el.value
+        el.value = ''
+        {captcha} = Post
+        captcha.response = v
+        Post.captchaReload()
+
+    captcha
+
   share: (e) ->
     {qr, form} = Post
 
-    if not Post.captchas.length
-      if e
-        el = $('#recaptcha_response_field', qr)
-        if el.value
-          Post.pushCaptcha.call el
-        else
-          return alert 'You forgot to type in the verification.'
-      else
-        return alert 'You forgot to type in the verification.'
+    unless captcha = Post.captchaGet()
+      alert 'You forgot to type in the verification.' if e
+      return
 
     o =
       resto: Post.resto
@@ -1223,9 +1245,8 @@ Post =
     img = $ '#items img[src]', qr
 
     if not (o.com or img)
-      if not e
-        return
-      return alert 'Error: No text entered.'
+      alert 'Error: No text entered.' if e
+      return
 
     if img
       img.dataset.submit = true
@@ -1234,7 +1255,6 @@ Post =
       else
         $.add form, $('input', img.parentNode)
 
-    captcha = Post.captchas.shift()
     o.recaptcha_challenge_field = captcha.challenge
     o.recaptcha_response_field  = captcha.response
     Post.stats()
@@ -1335,77 +1355,6 @@ QR =
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
-  init: ->
-    #can't reply in some stickies, recaptcha may be blocked, eg by noscript
-    return unless $('form[name=post]') and $('#recaptcha_response_field')
-    g.callbacks.push (root) ->
-      quote = $ '.quotejs + a', root
-      $.on quote, 'click', QR.quote
-    $.add d.body, $.el 'iframe',
-      name: 'iframe'
-      hidden: true
-    # nuke id so qr's field focuses on recaptcha reload, instead of normal form's
-    $('#recaptcha_response_field').id = ''
-    holder = $ '#recaptcha_challenge_field_holder'
-    $.on holder, 'DOMNodeInserted', QR.captchaNode
-    QR.captchaNode target: holder.firstChild
-    QR.accept = $('.rules').textContent.match(/: (.+) /)[1].replace /\w+/g, (type) ->
-      switch type
-        when 'JPG'
-          'image/JPEG'
-        when 'PDF'
-          'application/' + type
-        else
-          'image/' + type
-    QR.MAX_FILE_SIZE = $('input[name=MAX_FILE_SIZE]').value
-    QR.spoiler = if $('.postarea label') then ' <label>[<input type=checkbox name=spoiler>Spoiler Image?]</label>' else ''
-    if conf['Persistent QR']
-      QR.dialog()
-      $('textarea', QR.qr).blur()
-      if conf['Auto Hide QR']
-        $('#autohide', QR.qr).checked = true
-    if conf['Cooldown']
-      $.on window, 'storage', (e) -> QR.cooldown() if e.key is "#{NAMESPACE}cooldown/#{g.BOARD}"
-  attach: (file) ->
-    files = $ '#files', QR.qr
-    box = $.el 'li',
-      innerHTML: "<img><a class=x>X</a>"
-    $.on $('.x', box), 'click', QR.rmThumb
-    $.add box, file
-    $.add files, box
-    QR.stats()
-    QR.foo()
-  rmThumb: ->
-    $.rm @parentNode
-    QR.stats()
-  captchaNode: (e) ->
-    QR.captcha =
-      challenge: e.target.value
-      time: Date.now()
-    QR.captchaImg()
-  captchaImg: ->
-    {qr} = QR
-    return unless qr
-    c = QR.captcha.challenge
-    $('#captcha img', qr).src = "http://www.google.com/recaptcha/api/image?c=#{c}"
-  captchaPush: (el) ->
-    {captcha} = QR
-    captcha.response = el.value
-    captchas = $.get 'captchas', []
-    captchas.push captcha
-    $.set 'captchas', captchas
-    el.value = ''
-    QR.captchaReload()
-    QR.stats captchas
-  captchaShift: ->
-    captchas = $.get 'captchas', []
-    cutoff = Date.now() - 5*HOUR + 5*MINUTE
-    while captcha = captchas.shift()
-      if captcha.time > cutoff
-        break
-    $.set 'captchas', captchas
-    QR.stats captchas
-    captcha
   stats: (captchas) ->
     {qr} = QR
     captchas or= $.get 'captchas', []

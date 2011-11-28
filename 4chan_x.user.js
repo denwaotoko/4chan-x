@@ -1371,6 +1371,14 @@
   Post = {
     init: function() {
       var form, holder;
+      if (!($('form[name=post]') && $('#recaptcha_response_field'))) return;
+      if (conf['Cooldown']) {
+        $.on(window, 'storage', function(e) {
+          if (e.key === ("" + NAMESPACE + "cooldown/" + g.BOARD)) {
+            return Post.cooldown();
+          }
+        });
+      }
       Post.multi = typeof FormData !== "undefined" && FormData !== null;
       Post.spoiler = $('input[name=spoiler]') ? '<label>Spoiler Image?<input name=spoiler type=checkbox></label>' : '';
       if (!Post.multi) {
@@ -1395,10 +1403,12 @@
         hidden: true,
         src: Post.multi ? "http://sys.4chan.org/" + g.BOARD + "/src" : 'about:blank'
       }));
-      Post.captchas = [];
       Post.MAX_FILE_SIZE = $('[name=MAX_FILE_SIZE]').value;
       g.callbacks.push(Post.node);
-      if (conf['Persistent QR']) return Post.dialog();
+      if (g.REPLY && conf['Persistent QR']) {
+        Post.dialog();
+        if (conf['Auto Hide QR']) return $('#autohide', Post.qr).checked = true;
+      }
     },
     captchaNode: function(e) {
       Post.captcha = {
@@ -1436,7 +1446,9 @@
       return ta.focus();
     },
     stats: function() {
-      return $('#pstats', Post.qr).textContent = "captchas: " + Post.captchas.length;
+      var captchas;
+      captchas = $.get('captchas', []);
+      return $('#pstats', Post.qr).textContent = "captchas: " + captchas.length;
     },
     captchaKeydown: function(e) {
       var kc, v;
@@ -1446,8 +1458,8 @@
         Post.captchaReload();
         return;
       }
-      if (e.keyCode === 13) {
-        Post.pushCaptcha.call(this);
+      if (e.keyCode === 13 && v) {
+        Post.captchaSet.call(this);
         return Post.share();
       }
     },
@@ -1476,16 +1488,15 @@
     captchaReload: function() {
       return window.location = 'javascript:Recaptcha.reload()';
     },
-    pushCaptcha: function() {
-      var captcha, response;
-      if (!(response = this.value)) {
-        alert('You forgot to type in the verification.');
-        return;
-      }
+    captchaSet: function() {
+      var captcha, captchas, response;
+      response = this.value;
       this.value = '';
+      captchas = $.get('captchas', []);
       captcha = Post.captcha;
       captcha.response = response;
-      Post.captchas.push(captcha);
+      captchas.push(captcha);
+      $.set('captchas', captchas);
       Post.captchaReload();
       return Post.stats();
     },
@@ -1524,26 +1535,37 @@
       var fileDiv, multiple;
       multiple = Post.multi ? 'multiple' : '';
       fileDiv = $('#fileDiv', Post.qr);
-      fileDiv.innerHTML = "<input type=file name=upfile " + multiple + ">";
+      fileDiv.innerHTML = "<input type=file name=upfile " + multiple + " accept='image/*'>";
       return $.on($('input', fileDiv), 'change', Post.pushFile);
     },
     rmFile: function() {
       return $.rm(this.parentNode);
     },
+    captchaGet: function() {
+      var captcha, captchas, cutoff, el, v;
+      captchas = $.get('captchas', []);
+      cutoff = Date.now() - 5 * HOUR + 5 * MINUTE;
+      while (captcha = captchas.shift()) {
+        if (captcha.time > cutoff) break;
+      }
+      $.set('captchas', captchas);
+      if (!captcha) {
+        el = $('#recaptcha_response_field', Post.qr);
+        if (v = el.value) {
+          el.value = '';
+          captcha = Post.captcha;
+          captcha.response = v;
+          Post.captchaReload();
+        }
+      }
+      return captcha;
+    },
     share: function(e) {
       var captcha, el, form, img, name, o, qr, value, _i, _len, _ref;
       qr = Post.qr, form = Post.form;
-      if (!Post.captchas.length) {
-        if (e) {
-          el = $('#recaptcha_response_field', qr);
-          if (el.value) {
-            Post.pushCaptcha.call(el);
-          } else {
-            return alert('You forgot to type in the verification.');
-          }
-        } else {
-          return alert('You forgot to type in the verification.');
-        }
+      if (!(captcha = Post.captchaGet())) {
+        if (e) alert('You forgot to type in the verification.');
+        return;
       }
       o = {
         resto: Post.resto,
@@ -1557,8 +1579,8 @@
       delete o.upfile;
       img = $('#items img[src]', qr);
       if (!(o.com || img)) {
-        if (!e) return;
-        return alert('Error: No text entered.');
+        if (e) alert('Error: No text entered.');
+        return;
       }
       if (img) {
         img.dataset.submit = true;
@@ -1568,7 +1590,6 @@
           $.add(form, $('input', img.parentNode));
         }
       }
-      captcha = Post.captchas.shift();
       o.recaptcha_challenge_field = captcha.challenge;
       o.recaptcha_response_field = captcha.response;
       Post.stats();
@@ -1682,101 +1703,6 @@
   };
 
   QR = {
-    init: function() {
-      var holder;
-      if (!($('form[name=post]') && $('#recaptcha_response_field'))) return;
-      g.callbacks.push(function(root) {
-        var quote;
-        quote = $('.quotejs + a', root);
-        return $.on(quote, 'click', QR.quote);
-      });
-      $.add(d.body, $.el('iframe', {
-        name: 'iframe',
-        hidden: true
-      }));
-      $('#recaptcha_response_field').id = '';
-      holder = $('#recaptcha_challenge_field_holder');
-      $.on(holder, 'DOMNodeInserted', QR.captchaNode);
-      QR.captchaNode({
-        target: holder.firstChild
-      });
-      QR.accept = $('.rules').textContent.match(/: (.+) /)[1].replace(/\w+/g, function(type) {
-        switch (type) {
-          case 'JPG':
-            return 'image/JPEG';
-          case 'PDF':
-            return 'application/' + type;
-          default:
-            return 'image/' + type;
-        }
-      });
-      QR.MAX_FILE_SIZE = $('input[name=MAX_FILE_SIZE]').value;
-      QR.spoiler = $('.postarea label') ? ' <label>[<input type=checkbox name=spoiler>Spoiler Image?]</label>' : '';
-      if (conf['Persistent QR']) {
-        QR.dialog();
-        $('textarea', QR.qr).blur();
-        if (conf['Auto Hide QR']) $('#autohide', QR.qr).checked = true;
-      }
-      if (conf['Cooldown']) {
-        return $.on(window, 'storage', function(e) {
-          if (e.key === ("" + NAMESPACE + "cooldown/" + g.BOARD)) {
-            return QR.cooldown();
-          }
-        });
-      }
-    },
-    attach: function(file) {
-      var box, files;
-      files = $('#files', QR.qr);
-      box = $.el('li', {
-        innerHTML: "<img><a class=x>X</a>"
-      });
-      $.on($('.x', box), 'click', QR.rmThumb);
-      $.add(box, file);
-      $.add(files, box);
-      QR.stats();
-      return QR.foo();
-    },
-    rmThumb: function() {
-      $.rm(this.parentNode);
-      return QR.stats();
-    },
-    captchaNode: function(e) {
-      QR.captcha = {
-        challenge: e.target.value,
-        time: Date.now()
-      };
-      return QR.captchaImg();
-    },
-    captchaImg: function() {
-      var c, qr;
-      qr = QR.qr;
-      if (!qr) return;
-      c = QR.captcha.challenge;
-      return $('#captcha img', qr).src = "http://www.google.com/recaptcha/api/image?c=" + c;
-    },
-    captchaPush: function(el) {
-      var captcha, captchas;
-      captcha = QR.captcha;
-      captcha.response = el.value;
-      captchas = $.get('captchas', []);
-      captchas.push(captcha);
-      $.set('captchas', captchas);
-      el.value = '';
-      QR.captchaReload();
-      return QR.stats(captchas);
-    },
-    captchaShift: function() {
-      var captcha, captchas, cutoff;
-      captchas = $.get('captchas', []);
-      cutoff = Date.now() - 5 * HOUR + 5 * MINUTE;
-      while (captcha = captchas.shift()) {
-        if (captcha.time > cutoff) break;
-      }
-      $.set('captchas', captchas);
-      QR.stats(captchas);
-      return captcha;
-    },
     stats: function(captchas) {
       var images, qr;
       qr = QR.qr;
