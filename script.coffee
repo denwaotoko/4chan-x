@@ -1122,6 +1122,7 @@ Post =
       Post.share()
 
   dialog: (link) ->
+    #<img src=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41Ljg3O4BdAAAAXUlEQVQ4T2NgoAH4DzQTHyZoJckGENJASB6nc9GdCjdo6tSptkCsCPUqVgNAmtFtxiYGUkO0QrBibOqJtWkIGYDTqTgSGOnRiGYQ3mRLKBFhjUZiNCGrIZg3aKsAAGu4rTMFLFBMAAAAAElFTkSuQmCC>
     qr = Post.qr = ui.dialog 'post', 'top: 0; right: 0', "
     <a class=close>X</a>
     <input type=checkbox id=autohide title=autohide>
@@ -1147,6 +1148,9 @@ Post =
     </div>
     "
 
+    c = d.cookie
+    $('#name',  qr).value = if m = c.match(/4chan_name=([^;]+)/)  then decodeURIComponent m[1] else ''
+    $('#email', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
     if g.REPLY
       Post.resto = g.THREAD_ID
     else
@@ -1373,57 +1377,6 @@ QR =
   #captcha caching for report form
   #report queueing
   #check if captchas can be reused on eg dup file error
-  dialog: (text='', tid) ->
-    tid or= g.THREAD_ID or ''
-    QR.qr = qr = ui.dialog 'qr', 'top: 0; right: 0;', "
-    <a class=close>X</a>
-    <input type=checkbox id=autohide title=autohide>
-    <div class=move>
-      <span id=qr_stats></span>
-    </div>
-    <div class=autohide>
-      <span class=wat><img src=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41Ljg3O4BdAAAAXUlEQVQ4T2NgoAH4DzQTHyZoJckGENJASB6nc9GdCjdo6tSptkCsCPUqVgNAmtFtxiYGUkO0QrBibOqJtWkIGYDTqTgSGOnRiGYQ3mRLKBFhjUZiNCGrIZg3aKsAAGu4rTMFLFBMAAAAAElFTkSuQmCC></span>
-      <input form=qr_form placeholder=Name name=name>
-      <input form=qr_form placeholder=Email name=email>
-      <input form=qr_form placeholder=Subject name=sub>
-      <ul id=files></ul>
-      <form enctype=multipart/form-data method=post action=http://sys.4chan.org/#{g.BOARD}/post target=iframe id=qr_form>
-        <textarea placeholder=Comment name=com></textarea>
-        <div hidden>
-          <input name=pwd>
-          <input name=mode value=regist>
-          <input name=recaptcha_challenge_field id=challenge>
-          <input name=recaptcha_response_field id=response>
-        </div>
-        <div id=captcha>
-          <div><img></div>
-          <input id=recaptcha_response_field autocomplete=off>
-        </div>
-        <div>
-          <button>Submit</button>
-          #{if g.REPLY then "<label>[<input type=checkbox id=autopost title=autopost> Autopost]</label>" else ''}
-          <input form=qr_form placeholder=Thread name=resto value=#{tid} #{if g.REPLY then 'hidden' else ''}>
-          #{QR.spoiler}
-        </div>
-      </form>
-    </div>
-    <a class=error></a>
-    "
-    #XXX use dom methods to set values instead of injecting raw user input into your html -_-;
-    QR.reset()
-    QR.cooldown() if conf['Cooldown']
-    QR.foo()
-    $.on $('.close', qr), 'click', QR.close
-    $.on $('form', qr), 'submit', QR.submit
-    $.on $('#recaptcha_response_field', qr), 'keydown', QR.keydown
-    QR.captchaImg()
-    QR.stats()
-    $.add d.body, qr
-    ta = $ 'textarea', qr
-    ta.value = text
-    l = text.length
-    ta.setSelectionRange l, l
-    ta.focus()
   receive: (data) ->
     $('iframe[name=iframe]').src = 'about:blank'
     {qr} = QR
@@ -1448,15 +1401,6 @@ QR =
       QR.reset()
     else
       QR.close()
-  reset: ->
-    {qr} = QR
-    c = d.cookie
-    $('[name=name]', qr).value  = if m = c.match(/4chan_name=([^;]+)/)  then decodeURIComponent m[1] else ''
-    $('[name=email]', qr).value = if m = c.match(/4chan_email=([^;]+)/) then decodeURIComponent m[1] else ''
-    $('[name=pwd]', qr).value   = if m = c.match(/4chan_pass=([^;]+)/)  then decodeURIComponent m[1] else $('input[name=pwd]').value
-    $('[name=sub]', qr).value = ''
-    $('[name=spoiler]', qr)?.checked = false unless conf['Remember Spoiler']
-    $('textarea', qr).value = ''
   submit: (e) ->
     {qr} = QR
     #XXX e is undefined if method is called explicitly, eg, from auto posting

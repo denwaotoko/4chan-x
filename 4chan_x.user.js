@@ -1467,8 +1467,11 @@
       }
     },
     dialog: function(link) {
-      var qr;
+      var c, m, qr;
       qr = Post.qr = ui.dialog('post', 'top: 0; right: 0', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=pstats></span>    </div>    <div class=autohide>      <div id=foo>        <input placeholder=Name    id=name>        <input placeholder=Email   id=email>        <input placeholder=Subject id=sub>      </div>      <textarea placeholder=Comment name=com></textarea>      <div><img id=captchaImg></div>      <div><input id=recaptcha_response_field placeholder=Verification autocomplete=off></div>      <div id=fileDiv></div>      <ul id=items></ul>      <div>        <button id=share>Share</button>        <label>autoshare<input id=autoshare type=checkbox></label>        " + Post.spoiler + "      </div>    </div>    ");
+      c = d.cookie;
+      $('#name', qr).value = (m = c.match(/4chan_name=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
+      $('#email', qr).value = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
       if (g.REPLY) {
         Post.resto = g.THREAD_ID;
       } else {
@@ -1722,26 +1725,6 @@
   };
 
   QR = {
-    dialog: function(text, tid) {
-      var l, qr, ta;
-      if (text == null) text = '';
-      tid || (tid = g.THREAD_ID || '');
-      QR.qr = qr = ui.dialog('qr', 'top: 0; right: 0;', "    <a class=close>X</a>    <input type=checkbox id=autohide title=autohide>    <div class=move>      <span id=qr_stats></span>    </div>    <div class=autohide>      <span class=wat><img src=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41Ljg3O4BdAAAAXUlEQVQ4T2NgoAH4DzQTHyZoJckGENJASB6nc9GdCjdo6tSptkCsCPUqVgNAmtFtxiYGUkO0QrBibOqJtWkIGYDTqTgSGOnRiGYQ3mRLKBFhjUZiNCGrIZg3aKsAAGu4rTMFLFBMAAAAAElFTkSuQmCC></span>      <input form=qr_form placeholder=Name name=name>      <input form=qr_form placeholder=Email name=email>      <input form=qr_form placeholder=Subject name=sub>      <ul id=files></ul>      <form enctype=multipart/form-data method=post action=http://sys.4chan.org/" + g.BOARD + "/post target=iframe id=qr_form>        <textarea placeholder=Comment name=com></textarea>        <div hidden>          <input name=pwd>          <input name=mode value=regist>          <input name=recaptcha_challenge_field id=challenge>          <input name=recaptcha_response_field id=response>        </div>        <div id=captcha>          <div><img></div>          <input id=recaptcha_response_field autocomplete=off>        </div>        <div>          <button>Submit</button>          " + (g.REPLY ? "<label>[<input type=checkbox id=autopost title=autopost> Autopost]</label>" : '') + "          <input form=qr_form placeholder=Thread name=resto value=" + tid + " " + (g.REPLY ? 'hidden' : '') + ">          " + QR.spoiler + "        </div>      </form>    </div>    <a class=error></a>    ");
-      QR.reset();
-      if (conf['Cooldown']) QR.cooldown();
-      QR.foo();
-      $.on($('.close', qr), 'click', QR.close);
-      $.on($('form', qr), 'submit', QR.submit);
-      $.on($('#recaptcha_response_field', qr), 'keydown', QR.keydown);
-      QR.captchaImg();
-      QR.stats();
-      $.add(d.body, qr);
-      ta = $('textarea', qr);
-      ta.value = text;
-      l = text.length;
-      ta.setSelectionRange(l, l);
-      return ta.focus();
-    },
     receive: function(data) {
       var href, qr, row, textContent, _ref, _ref2;
       $('iframe[name=iframe]').src = 'about:blank';
@@ -1771,19 +1754,6 @@
       } else {
         return QR.close();
       }
-    },
-    reset: function() {
-      var c, m, qr, _ref;
-      qr = QR.qr;
-      c = d.cookie;
-      $('[name=name]', qr).value = (m = c.match(/4chan_name=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
-      $('[name=email]', qr).value = (m = c.match(/4chan_email=([^;]+)/)) ? decodeURIComponent(m[1]) : '';
-      $('[name=pwd]', qr).value = (m = c.match(/4chan_pass=([^;]+)/)) ? decodeURIComponent(m[1]) : $('input[name=pwd]').value;
-      $('[name=sub]', qr).value = '';
-      if (!conf['Remember Spoiler']) {
-        if ((_ref = $('[name=spoiler]', qr)) != null) _ref.checked = false;
-      }
-      return $('textarea', qr).value = '';
     },
     submit: function(e) {
       var captcha, challenge, el, id, input, op, qr, response;
