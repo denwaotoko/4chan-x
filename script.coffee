@@ -1306,14 +1306,16 @@ Post =
       ###
       window.addEventListener('message', (e) ->
         {data} = e
-        return unless data.to is 'Post.message'
-        parent.postMessage data, '*'
+        if data.to is 'Post.message'
+          parent.postMessage data, '*'
       , false)
 
     #code for non Post.multi
     data = to: 'Post.message'
     if node = $('table font b')?.firstChild
       data.error = node.textContent
+    else if node = $ 'meta'
+      data.url = node.content.match(/url=(.+)/)[1]
     postMessage data, '*'
     #if we're an iframe, parent will blank us
     #/end non Post.multi
@@ -1349,7 +1351,9 @@ Post =
     {qr} = Post
     if not Post.multi
       $('#iframe').src = 'about:blank'
-    {error} = data
+    {error, url} = data
+    if url
+      return window.location = url
     if error
       if error is 'Error: Duplicate file entry detected.'
         setTimeout Post.share, 1000
@@ -1369,9 +1373,6 @@ Post =
       cooldown = Date.now() + (if Post.sage then 60 else 30)*SECOND
       $.set "cooldown/#{g.BOARD}", cooldown
       Post.cooldown()
-
-  messageOP: (data) ->
-    window.location = data.url
 
   cooldown: ->
     {qr} = Post

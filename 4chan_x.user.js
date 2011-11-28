@@ -1639,8 +1639,7 @@
         */        return window.addEventListener('message', function(e) {
           var data;
           data = e.data;
-          if (data.to !== 'Post.message') return;
-          return parent.postMessage(data, '*');
+          if (data.to === 'Post.message') return parent.postMessage(data, '*');
         }, false);
       });
       data = {
@@ -1648,6 +1647,8 @@
       };
       if (node = (_ref = $('table font b')) != null ? _ref.firstChild : void 0) {
         data.error = node.textContent;
+      } else if (node = $('meta')) {
+        data.url = node.content.match(/url=(.+)/)[1];
       }
       postMessage(data, '*');
       return $.on(window, 'message', function(e) {
@@ -1689,10 +1690,11 @@
       return postMessage(data, '*');
     },
     message: function(data) {
-      var cooldown, error, img, qr;
+      var cooldown, error, img, qr, url;
       qr = Post.qr;
       if (!Post.multi) $('#iframe').src = 'about:blank';
-      error = data.error;
+      error = data.error, url = data.url;
+      if (url) return window.location = url;
       if (error) {
         if (error === 'Error: Duplicate file entry detected.') {
           setTimeout(Post.share, 1000);
@@ -1715,9 +1717,6 @@
         $.set("cooldown/" + g.BOARD, cooldown);
         return Post.cooldown();
       }
-    },
-    messageOP: function(data) {
-      return window.location = data.url;
     },
     cooldown: function() {
       var b, cooldown, n, now, qr;
