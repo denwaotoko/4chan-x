@@ -1,4 +1,7 @@
 master
+- aeosynth
+  keybinds: ctrl+m: expandImagesFrom: expand images from current position to
+  end of thread
 
 2.26.4
 - Mayhem
