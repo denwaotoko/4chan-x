@@ -721,8 +721,8 @@ keybinds =
       when conf.submit
         qr.submit() if qr.el and !qr.status()
       when conf.unreadCountTo0
-        unread.replies = []
-        unread.update()
+        Unread.replies = []
+        Unread.update()
       else
         return
     e.preventDefault()
@@ -1759,7 +1759,7 @@ options =
     $.id('backlinkPreview').textContent = conf['backlink'].replace /%id/, '123456789'
   favicon: ->
     Favicon.switch()
-    unread.update true
+    Unread.update true
     @nextElementSibling.innerHTML = "<img src=#{Favicon.unreadSFW}> <img src=#{Favicon.unreadNSFW}> <img src=#{Favicon.unreadDead}>"
 
 threading =
@@ -1945,10 +1945,10 @@ updater =
         clearTimeout updater.timeoutID
         g.dead = true
         if conf['Unread Count']
-          unread.title = unread.title.match(/^.+-/)[0] + ' 404'
+          Unread.title = Unread.title.match(/^.+-/)[0] + ' 404'
         else
           d.title = d.title.match(/^.+-/)[0] + ' 404'
-        unread.update true
+        Unread.update true
         qr.message.send req: 'abort'
         qr.status()
         Favicon.update()
@@ -2304,9 +2304,9 @@ quoteInline =
     root = if q.parentNode.nodeName is 'FONT' then q.parentNode else if q.nextSibling then q.nextSibling else q
     if el = $.id id
       inline = quoteInline.table id, el.innerHTML
-      if (i = unread.replies.indexOf el.parentNode.parentNode.parentNode) isnt -1
-        unread.replies.splice i, 1
-        unread.update()
+      if (i = Unread.replies.indexOf el.parentNode.parentNode.parentNode) isnt -1
+        Unread.replies.splice i, 1
+        Unread.update()
       if /\bbacklink\b/.test q.className
         $.after q.parentNode, inline
         if conf['Forward Hiding']
@@ -2495,38 +2495,38 @@ threadStats =
     if threadStats.images > threadStats.imgLimit
       imgcount.className = 'warning'
 
-unread =
+Unread =
   init: ->
     @title = d.title
-    unread.update()
-    $.on window, 'scroll', unread.scroll
+    Unread.update()
+    $.on window, 'scroll', Unread.scroll
     g.callbacks.push @node
 
   replies: []
 
   node: (root) ->
     return if root.hidden or root.className
-    unread.replies.push root
-    unread.update()
+    Unread.replies.push root
+    Unread.update()
 
   scroll: ->
     height = d.body.clientHeight
-    for reply, i in unread.replies
+    for reply, i in Unread.replies
       {bottom} = reply.getBoundingClientRect()
       if bottom > height #post is not completely read
         break
     return if i is 0
 
-    unread.replies = unread.replies[i..]
-    unread.update()
+    Unread.replies = Unread.replies[i..]
+    Unread.update()
 
   update: (forceUpdate) ->
     return unless g.REPLY
 
-    count = unread.replies.length
+    count = Unread.replies.length
 
     if conf['Unread Count']
-      d.title = "(#{count}) #{unread.title}"
+      d.title = "(#{count}) #{Unread.title}"
 
     unless conf['Unread Favicon'] and count < 2 or forceUpdate
       return
@@ -2901,7 +2901,7 @@ Main =
         titlePost.init()
 
       if conf['Unread Count'] or conf['Unread Favicon']
-        unread.init()
+        Unread.init()
 
     else #not reply
       if conf['Thread Hiding']

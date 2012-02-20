@@ -72,7 +72,7 @@
  */
 
 (function() {
-  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, SECOND, Time, VERSION, anonymize, conf, config, d, engine, expandComment, expandThread, filter, flatten, g, getTitle, imgExpand, imgGif, imgHover, key, keybinds, log, nav, options, qr, quoteBacklink, quoteIndicators, quoteInline, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unread, unxify, updater, val, watcher, _base;
+  var $, $$, DAY, Favicon, HOUR, MINUTE, Main, NAMESPACE, SECOND, Time, Unread, VERSION, anonymize, conf, config, d, engine, expandComment, expandThread, filter, flatten, g, getTitle, imgExpand, imgGif, imgHover, key, keybinds, log, nav, options, qr, quoteBacklink, quoteIndicators, quoteInline, quotePreview, redirect, replyHiding, reportButton, revealSpoilers, sauce, strikethroughQuotes, threadHiding, threadStats, threading, titlePost, ui, unxify, updater, val, watcher, _base;
 
   config = {
     main: {
@@ -965,8 +965,8 @@
           if (qr.el && !qr.status()) qr.submit();
           break;
         case conf.unreadCountTo0:
-          unread.replies = [];
-          unread.update();
+          Unread.replies = [];
+          Unread.update();
           break;
         default:
           return;
@@ -2236,7 +2236,7 @@
     },
     favicon: function() {
       Favicon["switch"]();
-      unread.update(true);
+      Unread.update(true);
       return this.nextElementSibling.innerHTML = "<img src=" + Favicon.unreadSFW + "> <img src=" + Favicon.unreadNSFW + "> <img src=" + Favicon.unreadDead + ">";
     }
   };
@@ -2455,11 +2455,11 @@
           clearTimeout(updater.timeoutID);
           g.dead = true;
           if (conf['Unread Count']) {
-            unread.title = unread.title.match(/^.+-/)[0] + ' 404';
+            Unread.title = Unread.title.match(/^.+-/)[0] + ' 404';
           } else {
             d.title = d.title.match(/^.+-/)[0] + ' 404';
           }
-          unread.update(true);
+          Unread.update(true);
           qr.message.send({
             req: 'abort'
           });
@@ -2921,9 +2921,9 @@
       root = q.parentNode.nodeName === 'FONT' ? q.parentNode : q.nextSibling ? q.nextSibling : q;
       if (el = $.id(id)) {
         inline = quoteInline.table(id, el.innerHTML);
-        if ((i = unread.replies.indexOf(el.parentNode.parentNode.parentNode)) !== -1) {
-          unread.replies.splice(i, 1);
-          unread.update();
+        if ((i = Unread.replies.indexOf(el.parentNode.parentNode.parentNode)) !== -1) {
+          Unread.replies.splice(i, 1);
+          Unread.update();
         }
         if (/\bbacklink\b/.test(q.className)) {
           $.after(q.parentNode, inline);
@@ -3177,37 +3177,37 @@
     }
   };
 
-  unread = {
+  Unread = {
     init: function() {
       this.title = d.title;
-      unread.update();
-      $.on(window, 'scroll', unread.scroll);
+      Unread.update();
+      $.on(window, 'scroll', Unread.scroll);
       return g.callbacks.push(this.node);
     },
     replies: [],
     node: function(root) {
       if (root.hidden || root.className) return;
-      unread.replies.push(root);
-      return unread.update();
+      Unread.replies.push(root);
+      return Unread.update();
     },
     scroll: function() {
       var bottom, height, i, reply, _len, _ref;
       height = d.body.clientHeight;
-      _ref = unread.replies;
+      _ref = Unread.replies;
       for (i = 0, _len = _ref.length; i < _len; i++) {
         reply = _ref[i];
         bottom = reply.getBoundingClientRect().bottom;
         if (bottom > height) break;
       }
       if (i === 0) return;
-      unread.replies = unread.replies.slice(i);
-      return unread.update();
+      Unread.replies = Unread.replies.slice(i);
+      return Unread.update();
     },
     update: function(forceUpdate) {
       var count;
       if (!g.REPLY) return;
-      count = unread.replies.length;
-      if (conf['Unread Count']) d.title = "(" + count + ") " + unread.title;
+      count = Unread.replies.length;
+      if (conf['Unread Count']) d.title = "(" + count + ") " + Unread.title;
       if (!(conf['Unread Favicon'] && count < 2 || forceUpdate)) return;
       Favicon.el.href = g.dead ? count ? Favicon.unreadDead : Favicon.dead : count ? Favicon.unread : Favicon["default"];
       return $.add(d.head, Favicon.el);
@@ -3618,7 +3618,7 @@
         if (conf['Thread Stats']) threadStats.init();
         if (conf['Reply Navigation']) nav.init();
         if (conf['Post in Title']) titlePost.init();
-        if (conf['Unread Count'] || conf['Unread Favicon']) unread.init();
+        if (conf['Unread Count'] || conf['Unread Favicon']) Unread.init();
       } else {
         if (conf['Thread Hiding']) threadHiding.init();
         if (conf['Thread Expansion']) expandThread.init();
