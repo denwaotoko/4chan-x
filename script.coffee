@@ -99,7 +99,7 @@ config =
     hide:             ['x',      'Hide thread']
     expandImage:      ['m',      'Expand selected image']
     expandAllImages:  ['M',      'Expand all images']
-    expandImagesFrom: ['ctrl+m', 'Exapnd images from the currently visible to the end of the thread']
+    expandImagesFrom: ['ctrl+m', 'Expand images from the currently visible to the end of the thread']
     update:           ['u',      'Update now']
     unreadCountTo0:   ['z',      'Reset unread status']
   updater:
