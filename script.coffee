@@ -97,7 +97,7 @@ config =
     expandThread:     ['e',      'Expand thread']
     watch:            ['w',      'Watch thread']
     hide:             ['x',      'Hide thread']
-    expandImages:     ['m',      'Expand selected image']
+    expandImage:      ['m',      'Expand selected image']
     expandAllImages:  ['M',      'Expand all images']
     expandImagesFrom: ['ctrl+m', 'Exapnd images from the currently visible to the end of the thread']
     update:           ['u',      'Update now']
@@ -699,7 +699,7 @@ keybinds =
         keybinds.open thread
       when conf.expandThread
         expandThread.toggle thread
-      when conf.expandImages
+      when conf.expandImage
         keybinds.img thread
       when conf.expandImagesFrom
         imgExpand.from()
