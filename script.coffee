@@ -79,28 +79,29 @@ config =
   backlink: '>>%id'
   favicon: 'ferongr'
   hotkeys:
-    openOptions:     ['ctrl+o', 'Open Options']
-    close:           ['Esc',    'Close Options or QR']
-    spoiler:         ['ctrl+s', 'Quick spoiler']
-    openQR:          ['i',      'Open QR with post number inserted']
-    openEmptyQR:     ['I',      'Open QR without post number inserted']
-    submit:          ['alt+s',  'Submit post']
-    nextReply:       ['J',      'Select next reply']
-    previousReply:   ['K',      'Select previous reply']
-    nextThread:      ['n',      'See next thread']
-    previousThread:  ['p',      'See previous thread']
-    nextPage:        ['L',      'Jump to the next page']
-    previousPage:    ['H',      'Jump to the previous page']
-    zero:            ['0',      'Jump to page 0']
-    openThreadTab:   ['o',      'Open thread in current tab']
-    openThread:      ['O',      'Open thread in new tab']
-    expandThread:    ['e',      'Expand thread']
-    watch:           ['w',      'Watch thread']
-    hide:            ['x',      'Hide thread']
-    expandImages:    ['m',      'Expand selected image']
-    expandAllImages: ['M',      'Expand all images']
-    update:          ['u',      'Update now']
-    unreadCountTo0:  ['z',      'Reset unread status']
+    openOptions:      ['ctrl+o', 'Open Options']
+    close:            ['Esc',    'Close Options or QR']
+    spoiler:          ['ctrl+s', 'Quick spoiler']
+    openQR:           ['i',      'Open QR with post number inserted']
+    openEmptyQR:      ['I',      'Open QR without post number inserted']
+    submit:           ['alt+s',  'Submit post']
+    nextReply:        ['J',      'Select next reply']
+    previousReply:    ['K',      'Select previous reply']
+    nextThread:       ['n',      'See next thread']
+    previousThread:   ['p',      'See previous thread']
+    nextPage:         ['L',      'Jump to the next page']
+    previousPage:     ['H',      'Jump to the previous page']
+    zero:             ['0',      'Jump to page 0']
+    openThreadTab:    ['o',      'Open thread in current tab']
+    openThread:       ['O',      'Open thread in new tab']
+    expandThread:     ['e',      'Expand thread']
+    watch:            ['w',      'Watch thread']
+    hide:             ['x',      'Hide thread']
+    expandImages:     ['m',      'Expand selected image']
+    expandAllImages:  ['M',      'Expand all images']
+    expandImagesFrom: ['ctrl+m', 'Exapnd images from the currently visible to the end of the thread']
+    update:           ['u',      'Update now']
+    unreadCountTo0:   ['z',      'Reset unread status']
   updater:
     checkbox:
       'Scrolling':   [false, 'Scroll updated posts into view. Only enabled at bottom of page.']
@@ -700,6 +701,8 @@ keybinds =
         expandThread.toggle thread
       when conf.expandImages
         keybinds.img thread
+      when conf.expandImagesFrom
+        imgExpand.from()
       when conf.nextThread
         return if g.REPLY
         nav.scroll +1
@@ -2752,6 +2755,19 @@ imgExpand =
 
   resize: ->
     imgExpand.style.textContent = ".fitheight img[md5] + img {max-height:#{d.body.clientHeight}px;}"
+
+  from: ->
+    {replies} = Unread
+    root = replies[0] or $ 'br[clear=left]'
+    visible = []
+
+    while (prev = $.x 'preceding-sibling::table', root) and (prev.getBoundingClientRect().top > 0)
+      visible.push prev
+      root = prev
+    visible.reverse()
+
+    for reply in visible.concat replies when img = $ 'img[md5]', reply
+      imgExpand.expand img
 
 Main =
   init: ->

@@ -170,6 +170,7 @@
       hide: ['x', 'Hide thread'],
       expandImages: ['m', 'Expand selected image'],
       expandAllImages: ['M', 'Expand all images'],
+      expandImagesFrom: ['ctrl+m', 'Exapnd images from the currently visible to the end of the thread'],
       update: ['u', 'Update now'],
       unreadCountTo0: ['z', 'Reset unread status']
     },
@@ -934,6 +935,9 @@
           break;
         case conf.expandImages:
           keybinds.img(thread);
+          break;
+        case conf.expandImagesFrom:
+          imgExpand.from();
           break;
         case conf.nextThread:
           if (g.REPLY) return;
@@ -3499,6 +3503,24 @@
     },
     resize: function() {
       return imgExpand.style.textContent = ".fitheight img[md5] + img {max-height:" + d.body.clientHeight + "px;}";
+    },
+    from: function() {
+      var img, prev, replies, reply, root, visible, _i, _len, _ref, _results;
+      replies = Unread.replies;
+      root = replies[0] || $('br[clear=left]');
+      visible = [];
+      while ((prev = $.x('preceding-sibling::table', root)) && (prev.getBoundingClientRect().top > 0)) {
+        visible.push(prev);
+        root = prev;
+      }
+      visible.reverse();
+      _ref = visible.concat(replies);
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        reply = _ref[_i];
+        if (img = $('img[md5]', reply)) _results.push(imgExpand.expand(img));
+      }
+      return _results;
     }
   };
 
